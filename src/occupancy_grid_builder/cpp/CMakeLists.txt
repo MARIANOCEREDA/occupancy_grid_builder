@@ -1,7 +1,10 @@
 cmake_minimum_required(VERSION 3.22.1)
 project(occupancy_grid_builder_cpp)
 
+set(CMAKE_CXX_STANDARD 20)
+
 find_package(PCL REQUIRED COMPONENTS common)
+
 
 include_directories(include ${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})

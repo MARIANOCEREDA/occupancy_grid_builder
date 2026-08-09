@@ -1,4 +1,5 @@
 import os
+import time
 
 import cv2
 import numpy as np
@@ -42,7 +43,7 @@ class SegmentationNode(Node):
 
     def image_callback(self, msg: Image):
         frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding=msg.encoding)
-
+        
         results = self.model(frame, conf=self.confidence, verbose=False)
 
         mask_img = self._build_mask(frame.shape[:2], results)

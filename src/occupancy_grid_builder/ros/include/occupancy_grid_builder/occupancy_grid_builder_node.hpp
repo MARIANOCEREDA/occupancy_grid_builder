@@ -12,6 +12,11 @@
 #include <string>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
+#include <atomic>
+#include <condition_variable>
+#include <map>
+#include <mutex>
+#include <thread>
 
 namespace occupancy_grid_builder
 {
@@ -36,6 +41,7 @@ class OccupancyGridBuilderNode : public rclcpp_lifecycle::LifecycleNode
 
   nav_msgs::msg::OccupancyGrid convertToOccupancyGrid(const std::vector<std::vector<int>>& grid,
                                                       const std_msgs::msg::Header& header);
+  void gridBuilderThread(std::stop_token stop_token);
 
   // Publishers and subscribers
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud_sub_;
@@ -59,6 +65,15 @@ class OccupancyGridBuilderNode : public rclcpp_lifecycle::LifecycleNode
   int height_;
   double origin_x_;
   double origin_y_;
+
+  std::jthread processing_thread_;
+  
+  mutable std::mutex pcl_mutex_;
+  std::atomic<bool> new_pointcloud_available_{false};
+  std::condition_variable pcl_cv_;
+  Eigen::Matrix4f transform_matrix_;
+  sensor_msgs::msg::PointCloud2::SharedPtr latest_pointcloud_msg_;
+  
 };
 
 }  // namespace occupancy_grid_builder
