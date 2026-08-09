@@ -1,0 +1,5 @@
+ultralytics:
+  ubuntu: 
+    pip:
+      packages:
+        - ultralytics

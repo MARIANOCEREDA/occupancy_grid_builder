@@ -1,0 +1,16 @@
+occupancy_grid_builder:
+  ros__parameters:
+    # Topic names
+    pointcloud_topic: "/points_labeled"
+    grid_topic: "/occupancy_grid"
+    
+    # Frame names
+    map_frame: "map"
+    sensor_frame: "lidar_frame"
+    
+    # Grid parameters
+    resolution: 0.1        # meters per cell
+    width: 1000           # cells (1000 * 0.1 = 100m)
+    height: 1000          # cells (1000 * 0.1 = 100m)
+    origin_x: 0.0       # meters
+    origin_y: 0.0       # meters

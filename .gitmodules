@@ -1,0 +1,4 @@
+[submodule "src/external/kiss-icp"]
+	path = src/external/kiss-icp
+	url = https://github.com/PRBonn/kiss-icp.git
+	branch = main
