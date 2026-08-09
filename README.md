@@ -122,6 +122,13 @@ cd /home/dev/ws
 rm -rf build install log
 ```
 
+### Using ROSBAGS
+
+When using rosbags, make sure the --clock flag is enabled to synchronize time with the bag file:
+```bash
+ros2 bag play my_bag_file --clock
+```
+
 ## Troubleshooting
 
 ### Issue: rosdep fails to find ultralytics
