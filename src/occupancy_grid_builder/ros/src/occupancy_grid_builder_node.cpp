@@ -10,6 +10,8 @@ OccupancyGridBuilderNode::OccupancyGridBuilderNode(const rclcpp::NodeOptions& op
   : rclcpp_lifecycle::LifecycleNode("occupancy_grid_builder_node", options)
 {
   RCLCPP_INFO(this->get_logger(), "OccupancyGridBuilderNode created");
+
+  pcl_cloud_ = std::make_shared<pcl::PointCloud<pcl::PointXYZRGB>>();
 }
 
 CallbackReturn OccupancyGridBuilderNode::on_configure(const rclcpp_lifecycle::State&)
@@ -22,8 +24,8 @@ CallbackReturn OccupancyGridBuilderNode::on_configure(const rclcpp_lifecycle::St
   this->declare_parameter<std::string>("map_frame", "map");
   this->declare_parameter<std::string>("sensor_frame", "lidar_frame");
   this->declare_parameter<double>("resolution", 0.1);
-  this->declare_parameter<int>("width", 100);
-  this->declare_parameter<int>("height", 100);
+  this->declare_parameter<int>("width", 1000);
+  this->declare_parameter<int>("height", 1000);
   this->declare_parameter<double>("origin_x", -50.0);
   this->declare_parameter<double>("origin_y", -50.0);
 
@@ -37,18 +39,14 @@ CallbackReturn OccupancyGridBuilderNode::on_configure(const rclcpp_lifecycle::St
   this->get_parameter("origin_x", origin_x_);
   this->get_parameter("origin_y", origin_y_);
 
-  // Initialize TF2
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
   tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
-  // Initialize occupancy grid builder
   grid_builder_ =
       std::make_unique<OccupancyGridBuilder>(resolution_, width_, height_, origin_x_, origin_y_);
 
-  // Create publisher (lifecycle publisher)
   grid_pub_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(grid_topic_, rclcpp::QoS(10));
 
-  // Create subscriber
   pointcloud_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
       pointcloud_topic_,
       rclcpp::QoS(10),
@@ -124,12 +122,13 @@ void OccupancyGridBuilderNode::pointCloudCallback(
     Eigen::Isometry3d transform_eigen = tf2::transformToEigen(transform_stamped.transform);
     Eigen::Matrix4f transform_matrix = transform_eigen.matrix().cast<float>();
 
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcl_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
-    pcl::fromROSMsg(*msg, *pcl_cloud);
+    pcl_cloud_->clear();
+    pcl::fromROSMsg(*msg, *pcl_cloud_);
 
-    const auto& grid = grid_builder_->buildGridFromPCL(pcl_cloud, transform_matrix);
+    const auto& grid = grid_builder_->buildGridFromPCL(pcl_cloud_, transform_matrix);
 
     auto grid_msg = convertToOccupancyGrid(grid, msg->header);
+    auto end_time = std::chrono::high_resolution_clock::now();
 
     grid_pub_->publish(grid_msg);
   }
@@ -186,13 +185,12 @@ int main(int argc, char* argv[])
 {
   rclcpp::init(argc, argv);
   rclcpp::executors::SingleThreadedExecutor executor;
-  auto node =
-      std::make_shared<occupancy_grid_builder::OccupancyGridBuilderNode>(rclcpp::NodeOptions());
+  auto node = std::make_shared<occupancy_grid_builder::OccupancyGridBuilderNode>();
   executor.add_node(node->get_node_base_interface());
   executor.spin();
   rclcpp::shutdown();
   return 0;
-};
+}
 
 // Register the component with class_loader for composable nodes
 #include <rclcpp_components/register_node_macro.hpp>

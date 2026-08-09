@@ -47,6 +47,7 @@ class OccupancyGridBuilderNode : public rclcpp_lifecycle::LifecycleNode
 
   // Occupancy grid builder
   std::unique_ptr<OccupancyGridBuilder> grid_builder_;
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcl_cloud_;
 
   // Parameters
   std::string pointcloud_topic_;

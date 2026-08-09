@@ -5,7 +5,7 @@ namespace occupancy_grid_builder
 OccupancyGridBuilder::~OccupancyGridBuilder() = default;
 
 std::vector<std::vector<int>>& OccupancyGridBuilder::buildGridFromPCL(
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, Eigen::Matrix4f pcl_origin_to_map_transform)
+    const pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud, const Eigen::Matrix4f& pcl_origin_to_map_transform)
 {
     for (const auto& point : cloud->points)
     {

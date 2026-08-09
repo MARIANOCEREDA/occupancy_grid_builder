@@ -138,7 +138,7 @@ def generate_launch_description():
     pkg_name = 'occupancy_grid_builder'
     pkg_dir = get_package_share_directory(pkg_name)
     params_file = os.path.join(pkg_dir, 'config', 'occupancy_grid_builder.yaml')
-    occupancy_grid_builder_node = Node(
+    occupany_grid_builder = Node(
         package='occupancy_grid_builder',
         executable='occupancy_grid_builder_node',
         name='occupancy_grid_builder_node',
@@ -178,7 +178,7 @@ def generate_launch_description():
         image_undistort_node,
         mask_lidar_fusion_node,
         segmentation_node,
-        occupancy_grid_builder_node,
+        occupany_grid_builder,
         kiss_icp_node,
         ekf_node,
         lifecycle_manager_node,

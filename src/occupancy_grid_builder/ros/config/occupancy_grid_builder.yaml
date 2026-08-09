@@ -1,4 +1,4 @@
-occupancy_grid_builder:
+occupancy_grid_builder_node:
   ros__parameters:
     # Topic names
     pointcloud_topic: "/points_labeled"
@@ -12,5 +12,5 @@ occupancy_grid_builder:
     resolution: 0.1        # meters per cell
     width: 1000           # cells (1000 * 0.1 = 100m)
     height: 1000          # cells (1000 * 0.1 = 100m)
-    origin_x: 0.0       # meters
-    origin_y: 0.0       # meters
+    origin_x: -50.0       # meters
+    origin_y: -50.0       # meters

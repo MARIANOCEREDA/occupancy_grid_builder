@@ -25,8 +25,8 @@ class OccupancyGridBuilder
   }
   ~OccupancyGridBuilder();
 
-  std::vector<std::vector<int>>& buildGridFromPCL(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
-                                                  Eigen::Matrix4f pcl_origin_to_map_transform);
+  std::vector<std::vector<int>>& buildGridFromPCL(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud,
+                                                  const Eigen::Matrix4f& pcl_origin_to_map_transform);
   Eigen::Vector4f pointToMap(const Eigen::Vector4f& point_sensor_frame,
                              const Eigen::Matrix4f& sensor_to_map_transform);
   Eigen::Vector2i mapToGrid(const Eigen::Vector4f& point_in_map_frame);
