@@ -2,7 +2,7 @@ occupancy_grid_builder_node:
   ros__parameters:
     # Topic names
     pointcloud_topic: "/points_labeled"
-    grid_topic: "/occupancy_grid"
+    grid_topic: "/map"
     
     # Frame names
     map_frame: "map"
@@ -12,5 +12,5 @@ occupancy_grid_builder_node:
     resolution: 0.1        # meters per cell
     width: 2000           # cells (2000 * 0.1 = 200m)
     height: 2000          # cells (2000 * 0.1 = 200m)
-    origin_x: -100.0       # meters (map covers -100 to +100)
-    origin_y: -100.0       # meters (map covers -100 to +100)
+    origin_x: -100.0     # meters (map covers -100 to +100)
+    origin_y: -100.0     # meters (map covers -100 to +100)

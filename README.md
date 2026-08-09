@@ -103,6 +103,18 @@ ros2 launch occupancy_grid_builder_bringup occupancy_grid_builder_bringup.launch
   use_sim_time:=false
 ```
 
+### Launching the local costmap (if needed)
+
+```bash
+ros2 run nav2_costmap_2d nav2_costmap_2d --ros-args -r __ns:=/local_costmap -r __node:=local_costmap --params-file /home/dev/ws/src/occupancy_grid_builder_bringup/config/local_costmap.yaml
+```
+
+Configure and activate the local costmap using lifecycle services:
+```bash
+ros2 lifecycle set local_costmap/local_costmap configure
+ros2 lifecycle set local_costmap/local_costmap activate
+```
+
 ## Cleaning Build Artifacts
 
 ```bash

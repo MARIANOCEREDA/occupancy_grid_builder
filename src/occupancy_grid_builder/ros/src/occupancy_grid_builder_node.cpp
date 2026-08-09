@@ -20,7 +20,7 @@ CallbackReturn OccupancyGridBuilderNode::on_configure(const rclcpp_lifecycle::St
 
   // Declare and get parameters
   this->declare_parameter<std::string>("pointcloud_topic", "/points_labeled");
-  this->declare_parameter<std::string>("grid_topic", "/occupancy_grid");
+  this->declare_parameter<std::string>("grid_topic", "/map");
   this->declare_parameter<std::string>("map_frame", "map");
   this->declare_parameter<std::string>("sensor_frame", "lidar_frame");
   this->declare_parameter<double>("resolution", 0.1);
@@ -51,7 +51,9 @@ CallbackReturn OccupancyGridBuilderNode::on_activate(const rclcpp_lifecycle::Sta
   grid_builder_ =
       std::make_unique<OccupancyGridBuilder>(resolution_, width_, height_, origin_x_, origin_y_);
 
-  grid_pub_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(grid_topic_, rclcpp::QoS(10));
+  // Use TRANSIENT_LOCAL durability for map topic to be compatible with nav2 costmap
+  auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable();
+  grid_pub_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(grid_topic_, qos);
 
   pointcloud_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
       pointcloud_topic_,

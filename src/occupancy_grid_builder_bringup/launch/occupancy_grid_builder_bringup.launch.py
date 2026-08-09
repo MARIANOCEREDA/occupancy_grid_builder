@@ -1,14 +1,18 @@
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, EmitEvent, IncludeLaunchDescription, RegisterEventHandler, TimerAction
+from launch.events import matches_action
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
-from launch_ros.actions import Node
+from launch_ros.actions import LifecycleNode, Node
+from launch_ros.event_handlers import OnStateTransition
+from launch_ros.events.lifecycle import ChangeState
 from launch_ros.substitutions import FindPackageShare
 from launch.substitutions import PathJoinSubstitution
 from launch.conditions import IfCondition
 from launch_ros.descriptions import ComposableNode
 from launch_ros.actions import ComposableNodeContainer
 from ament_index_python.packages import get_package_share_directory
+from lifecycle_msgs.msg import Transition
 import os
 
 import xacro
@@ -134,11 +138,23 @@ def generate_launch_description():
         }],
     )
 
+    # ----- Map to odom transform broadcaster node -----
+    map_to_odom_publish_transform = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='map_to_odom_broadcaster',
+        output='screen',
+        arguments=['0', '0', '0', '0', '0', '0', 'map', 'odom'],
+        parameters=[{
+            'use_sim_time': LaunchConfiguration('use_sim_time'),
+        }]
+    )
+
     # ----- Occupancy Grid Builder Node -----
-    pkg_name = 'occupancy_grid_builder'
+    pkg_name = 'occupancy_grid_builder_bringup'
     pkg_dir = get_package_share_directory(pkg_name)
     params_file = os.path.join(pkg_dir, 'config', 'occupancy_grid_builder.yaml')
-    occupany_grid_builder = Node(
+    occupancy_grid_builder = Node(
         package='occupancy_grid_builder',
         executable='occupancy_grid_builder_node',
         name='occupancy_grid_builder_node',
@@ -146,13 +162,28 @@ def generate_launch_description():
         parameters=[params_file, {'use_sim_time': LaunchConfiguration('use_sim_time')}],
     )
 
-    # --- Lifecycle manager ---
+    # ----- Nav2 Local Costmap Node -----
+    local_costmap_params_file = os.path.join(
+        get_package_share_directory('occupancy_grid_builder_bringup'), 
+        'config', 
+        'local_costmap.yaml'
+    )
+    local_costmap_node = LifecycleNode(
+        package='nav2_costmap_2d',
+        executable='nav2_costmap_2d',
+        namespace='local_costmap',
+        name='local_costmap',
+        output='screen',
+        parameters=[local_costmap_params_file, {'use_sim_time': LaunchConfiguration('use_sim_time')}],
+    )
+
+    # --- Lifecycle manager  ---
     lifecycle_node_names = [
         'image_undistort_node',
         'camera_lidar_fusion_node',
-        'occupancy_grid_builder_node'
+        'occupancy_grid_builder_node',
     ]
-    lifecycle_manager_node = Node(
+    lifecycle_manager_backbone = Node(
         package='nav2_lifecycle_manager',
         executable='lifecycle_manager',
         name='lifecycle_manager',
@@ -177,9 +208,10 @@ def generate_launch_description():
         rviz_node,
         image_undistort_node,
         mask_lidar_fusion_node,
-        segmentation_node,
-        occupany_grid_builder,
         kiss_icp_node,
+        map_to_odom_publish_transform,
+        segmentation_node,
+        occupancy_grid_builder,
         ekf_node,
-        lifecycle_manager_node,
+        lifecycle_manager_backbone,
     ])
