@@ -21,7 +21,8 @@ class OccupancyGridBuilder
       origin_x_(origin_x),
       origin_y_(origin_y)
   {
-    occupancy_grid_.resize(height_, std::vector<int>(width_, 0));
+    // Initialize to -1 (unknown) following ROS2 nav2 convention
+    occupancy_grid_.resize(height_, std::vector<int>(width_, -1));
   }
   ~OccupancyGridBuilder();
 
@@ -30,6 +31,7 @@ class OccupancyGridBuilder
   Eigen::Vector4f pointToMap(const Eigen::Vector4f& point_sensor_frame,
                              const Eigen::Matrix4f& sensor_to_map_transform);
   Eigen::Vector2i mapToGrid(const Eigen::Vector4f& point_in_map_frame);
+  std::vector<Eigen::Vector2i> bresenhamLine(int x0, int y0, int x1, int y1);
 
  private:
   std::vector<std::vector<int>> occupancy_grid_;

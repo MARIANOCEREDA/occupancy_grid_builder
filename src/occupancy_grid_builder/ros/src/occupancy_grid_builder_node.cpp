@@ -146,7 +146,7 @@ nav_msgs::msg::OccupancyGrid OccupancyGridBuilderNode::convertToOccupancyGrid(
       {
         grid_msg.data[index] = 0;  // Free
       }
-      else if (grid[y][x] == 1)
+      else if (grid[y][x] > 0)
       {
         grid_msg.data[index] = 100;  // Occupied
       }
