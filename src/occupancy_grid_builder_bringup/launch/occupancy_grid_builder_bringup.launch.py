@@ -63,11 +63,10 @@ def generate_launch_description():
     )
 
     # --- KISS-ICP node ---
-    kiss_icp_node = Node(
+    kiss_icp_component = ComposableNode(
         package='kiss_icp',
-        executable='kiss_icp_node',
+        plugin='kiss_icp_ros::OdometryServer',
         name='kiss_icp_node',
-        output='screen',
         remappings=[
             ('pointcloud_topic', LaunchConfiguration('topic')),
         ],
@@ -95,26 +94,59 @@ def generate_launch_description():
         condition=IfCondition(LaunchConfiguration('visualize'))
     )
 
-    # --- Image Undistort node ---
-    image_undistort_node = Node(
+    # --- Image undistort Composable Node ---
+    image_undistort_component = ComposableNode(
         package='image_undistort',
-        executable='image_undistort_node',
+        plugin='image_undistort::ImageUndistort',
         name='image_undistort_node',
-        output='screen',
+        parameters=[{
+            'use_sim_time': LaunchConfiguration('use_sim_time'),
+            'resize_output': False
+        }],
+    )
+
+    # --- Segmentation Inference ONNX Composable Node ---
+    segmentation_inference_onnx_component = ComposableNode(
+        package='segmentation_inference_onnx_ros',
+        plugin='yolo_onnx_inference_ros::InferenceNode',
+        name='segmentation_inference_onnx_node',
+        parameters=[{
+            'use_sim_time': LaunchConfiguration('use_sim_time'),
+            'model_path': os.path.join(
+                get_package_share_directory('segmentation_inference_onnx_ros'), 
+                'models', 
+                'yolo11n-seg.onnx'
+            ),
+            'device_type': 'CPU',
+            # COCO class IDs to keep. Leave empty [] to allow all classes.
+            # Common IDs: 0=person, 2=car, 3=motorcycle, 5=bus, 7=truck
+            'class_allowlist': [5,7],
+        }],
+    )
+
+    # --- Camera-LiDAR Fusion Composable Node ---
+    camera_lidar_fusion_component = ComposableNode(
+        package='camera_lidar_fusion',
+        plugin='camera_lidar_fusion::CameraLidarFusionNode',
+        name='camera_lidar_fusion_node',
         parameters=[{
             'use_sim_time': LaunchConfiguration('use_sim_time'),
         }],
     )
 
-    # -- Segmentation inference node ---
-    mask_lidar_fusion_node = Node(
-        package='camera_lidar_fusion',
-        executable='camera_lidar_fusion_node',
-        name='camera_lidar_fusion_node',
-        output='screen',
-        parameters=[{
-            'use_sim_time': LaunchConfiguration('use_sim_time'),
-        }],
+    # --- Occupancy Grid Builder Composable Node ---
+    occupancy_grid_builder_component = ComposableNode(
+        package='occupancy_grid_builder',
+        plugin='occupancy_grid_builder::OccupancyGridBuilderNode',
+        name='occupancy_grid_builder_node',
+        parameters=[
+            os.path.join(
+                get_package_share_directory('occupancy_grid_builder_bringup'), 
+                'config', 
+                'occupancy_grid_builder.yaml'
+            ),
+            {'use_sim_time': LaunchConfiguration('use_sim_time')}
+        ],
     )
 
     # --- EKF node ---
@@ -127,17 +159,6 @@ def generate_launch_description():
                     {'use_sim_time': LaunchConfiguration('use_sim_time')}],
     )
 
-    # -- Segmentation inference node ---
-    segmentation_node = Node(
-        package='segmentation_inference',
-        executable='segmentation_node',
-        name='segmentation_node',
-        output='screen',
-        parameters=[{
-            'use_sim_time': LaunchConfiguration('use_sim_time'),
-        }],
-    )
-
     # ----- Map to odom transform broadcaster node -----
     map_to_odom_publish_transform = Node(
         package='tf2_ros',
@@ -148,18 +169,6 @@ def generate_launch_description():
         parameters=[{
             'use_sim_time': LaunchConfiguration('use_sim_time'),
         }]
-    )
-
-    # ----- Occupancy Grid Builder Node -----
-    pkg_name = 'occupancy_grid_builder_bringup'
-    pkg_dir = get_package_share_directory(pkg_name)
-    params_file = os.path.join(pkg_dir, 'config', 'occupancy_grid_builder.yaml')
-    occupancy_grid_builder = Node(
-        package='occupancy_grid_builder',
-        executable='occupancy_grid_builder_node',
-        name='occupancy_grid_builder_node',
-        output='screen',
-        parameters=[params_file, {'use_sim_time': LaunchConfiguration('use_sim_time')}],
     )
 
     # ----- Nav2 Local Costmap Node -----
@@ -177,16 +186,32 @@ def generate_launch_description():
         parameters=[local_costmap_params_file, {'use_sim_time': LaunchConfiguration('use_sim_time')}],
     )
 
-    # --- Lifecycle manager  ---
+    perception_container = ComposableNodeContainer(
+        name='perception_container',
+        namespace='',
+        package='rclcpp_components',
+        executable='component_container',
+        composable_node_descriptions=[
+            kiss_icp_component,
+            image_undistort_component,
+            segmentation_inference_onnx_component,
+            camera_lidar_fusion_component,
+            occupancy_grid_builder_component
+        ],
+        output='screen',
+    )
+
+    # --- Lifecycle manager for all perception nodes in the container ---
     lifecycle_node_names = [
         'image_undistort_node',
+        'segmentation_inference_onnx_node',
         'camera_lidar_fusion_node',
         'occupancy_grid_builder_node',
     ]
     lifecycle_manager_backbone = Node(
         package='nav2_lifecycle_manager',
         executable='lifecycle_manager',
-        name='lifecycle_manager',
+        name='lifecycle_manager_perception',
         output='screen',
         parameters=[{
             'use_sim_time': LaunchConfiguration('use_sim_time'),
@@ -196,8 +221,6 @@ def generate_launch_description():
         }],
     )
 
-    # --- Component container for KISS-ICP, IMAGE_UNDISTORT, MASK_LIDAR_FUSION, SEGMENTATION ---
-
     return LaunchDescription([
         topic_arg,
         visualize_arg,
@@ -206,12 +229,8 @@ def generate_launch_description():
         lidar_odom_frame_arg,
         robot_state_publisher_node,
         rviz_node,
-        image_undistort_node,
-        mask_lidar_fusion_node,
-        kiss_icp_node,
         map_to_odom_publish_transform,
-        segmentation_node,
-        occupancy_grid_builder,
         ekf_node,
+        perception_container,
         lifecycle_manager_backbone,
     ])

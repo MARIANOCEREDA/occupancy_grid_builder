@@ -55,5 +55,6 @@ namespace image_undistort
         std::string image_topic_;
         std::string camera_info_topic_;
         std::string output_image_topic_;
+        bool resize_output_ = false;
     };
 } // namespace image_undistort

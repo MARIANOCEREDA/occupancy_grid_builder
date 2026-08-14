@@ -86,6 +86,22 @@ RUN addgroup --gid $GID $GROUP \
     && echo "source /usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash" >> /home/$USER/.bashrc \
     && echo "export QT_X11_NO_MITSHM=1" >> /home/$USER/.bashrc
 
+# Install OpenCV 4.6.0 (provided by Ubuntu 24.04 Noble apt)
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    sudo apt-get update \
+    && sudo apt-get install -y libopencv-dev
+
+# Install ONNX Runtime 1.22.0 GPU (x64)
+ARG ONNXRUNTIME_VERSION=1.22.0
+RUN cd /tmp \
+    && wget -q https://github.com/microsoft/onnxruntime/releases/download/v${ONNXRUNTIME_VERSION}/onnxruntime-linux-x64-gpu-${ONNXRUNTIME_VERSION}.tgz \
+    && tar -xzf onnxruntime-linux-x64-gpu-${ONNXRUNTIME_VERSION}.tgz \
+    && sudo cp -r onnxruntime-linux-x64-gpu-${ONNXRUNTIME_VERSION}/include/* /usr/local/include/ \
+    && sudo cp -r onnxruntime-linux-x64-gpu-${ONNXRUNTIME_VERSION}/lib/* /usr/local/lib/ \
+    && sudo ldconfig \
+    && rm -rf /tmp/onnxruntime-linux-x64-gpu-${ONNXRUNTIME_VERSION}*
+
 USER $USER
 
 ENV HOME=/home/$USER

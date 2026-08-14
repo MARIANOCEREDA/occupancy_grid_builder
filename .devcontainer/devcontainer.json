@@ -32,7 +32,8 @@
     "runArgs": [
         "--env", "DISPLAY=${localEnv:DISPLAY}",
         "--env", "QT_X11_NO_MITSHM=1",
-        "--gpus", "all"
+        "--gpus", "all",
+        "--shm-size=4g"
     ],
     "remoteUser": "dev",
     "postCreateCommand": "echo 'Devcontainer ready 🚀'"

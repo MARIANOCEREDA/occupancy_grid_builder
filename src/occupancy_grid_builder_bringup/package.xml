@@ -8,10 +8,16 @@
   <license>MIT</license>
 
   <depend>kiss_icp</depend>
+  <depend>camera_lidar_fusion</depend>
+  <depend>image_undistort</depend>
+  <depend>occupancy_grid_builder</depend>
+  <depend>segmentation_inference_onnx_ros</depend>
   <depend>robot_description</depend>
   <depend>robot_localization</depend>
   <depend>rviz2</depend>
   <depend>nav2_costmap_2d</depend>
+  <depend>nav2_lifecycle_manager</depend>
+  <depend>tf2_ros</depend>
   <depend>launch</depend>
   <depend>launch_ros</depend>
   <depend>lifecycle_msgs</depend>

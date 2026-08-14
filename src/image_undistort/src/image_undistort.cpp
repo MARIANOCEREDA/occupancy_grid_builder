@@ -15,10 +15,12 @@ namespace image_undistort
         this->declare_parameter("input_image_topic", "image");
         this->declare_parameter("camera_info_topic", "camera_info");
         this->declare_parameter("output_image_topic", "image_rect");
+        this->declare_parameter("resize_output", false);
 
         image_topic_ = this->get_parameter("input_image_topic").as_string();
         camera_info_topic_ = this->get_parameter("camera_info_topic").as_string();
         output_image_topic_ = this->get_parameter("output_image_topic").as_string();
+        resize_output_ = this->get_parameter("resize_output").as_bool();
 
         RCLCPP_INFO(get_logger(), "Configured %s node", kNodeName);
         
@@ -102,6 +104,11 @@ namespace image_undistort
         {
             RCLCPP_ERROR(get_logger(), "Unsupported distortion model.");
             return;
+        }
+
+        if (resize_output_)
+        {
+            cv::resize(undistorted_image_, undistorted_image_, cv::Size(), 0.5, 0.5);
         }
 
         sensor_msgs::msg::Image::SharedPtr undistorted_image_msg = cv_bridge::CvImage(
