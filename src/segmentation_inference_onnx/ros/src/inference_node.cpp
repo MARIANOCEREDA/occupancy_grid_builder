@@ -10,7 +10,6 @@ InferenceNode::InferenceNode(const rclcpp::NodeOptions& options)
 {
   this->declare_parameter<std::string>("model_path");
   this->declare_parameter<std::string>("device_type");
-  this->declare_parameter<std::vector<int64_t>>("class_allowlist", std::vector<int64_t>{});
 }
 
 CallbackReturn InferenceNode::on_configure(const rclcpp_lifecycle::State&)
@@ -23,17 +22,6 @@ CallbackReturn InferenceNode::on_configure(const rclcpp_lifecycle::State&)
   {
     RCLCPP_ERROR(get_logger(), "Both 'model_path' and 'device_type' parameters must be set.");
     return CallbackReturn::FAILURE;
-  }
-
-  class_allowlist_.clear();
-  for (const int64_t id : this->get_parameter("class_allowlist").as_integer_array())
-  {
-    class_allowlist_.insert(static_cast<int>(id));
-  }
-  if (!class_allowlist_.empty())
-  {
-    RCLCPP_INFO(get_logger(), "Class allowlist active: %zu class(es) will be kept.",
-                class_allowlist_.size());
   }
 
   return CallbackReturn::SUCCESS;

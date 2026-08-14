@@ -118,9 +118,6 @@ def generate_launch_description():
                 'yolo11n-seg.onnx'
             ),
             'device_type': 'CPU',
-            # COCO class IDs to keep. Leave empty [] to allow all classes.
-            # Common IDs: 0=person, 2=car, 3=motorcycle, 5=bus, 7=truck
-            'class_allowlist': [5,7],
         }],
     )
 

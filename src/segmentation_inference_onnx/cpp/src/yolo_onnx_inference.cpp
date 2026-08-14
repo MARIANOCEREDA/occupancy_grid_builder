@@ -199,25 +199,31 @@ std::vector<BoundingBox> YoloONNXInference::postprocess(std::vector<Ort::Value>&
                                                       proto_height,
                                                       proto_width);
 
-  auto filtered_boxes =
-      postprocess::filter_boxes_by_confidence(bounding_boxes, confidence_threshold_);
-
-  // Get NMS indices to track which masks survive
-  auto nms_indices = postprocess::non_max_suppression_with_indices(filtered_boxes, 0.5f);
-
-  // // Apply NMS and get final boxes
-  std::vector<BoundingBox> result_boxes;
-  result_boxes.reserve(nms_indices.size());
-  for (const int idx : nms_indices)
+  // Filter by confidence while preserving the original index into proto_masks / bounding_boxes.
+  std::vector<int> conf_indices;
+  std::vector<BoundingBox> filtered_boxes;
+  for (int i = 0; i < static_cast<int>(bounding_boxes.size()); ++i)
   {
-    result_boxes.emplace_back(filtered_boxes[idx]);
+    if (bounding_boxes[i].confidence >= confidence_threshold_)
+    {
+      conf_indices.push_back(i);
+      filtered_boxes.push_back(bounding_boxes[i]);
+    }
   }
 
-  // Extract masks for surviving boxes
-  cv::Mat final_masks(result_boxes.size(), proto_masks.cols, CV_32F);
+  // NMS returns indices into filtered_boxes.
+  auto nms_indices = postprocess::non_max_suppression_with_indices(filtered_boxes, 0.5f);
+
+  // Build result boxes and copy the correct proto_masks row for each survivor.
+  std::vector<BoundingBox> result_boxes;
+  result_boxes.reserve(nms_indices.size());
+  cv::Mat final_masks(static_cast<int>(nms_indices.size()), proto_masks.cols, CV_32F);
   for (size_t i = 0; i < nms_indices.size(); ++i)
   {
-    proto_masks.row(nms_indices[i]).copyTo(final_masks.row(i));
+    result_boxes.emplace_back(filtered_boxes[nms_indices[i]]);
+    // Map: nms_indices[i] → filtered_boxes index → conf_indices[...] → bounding_boxes index
+    const int original_idx = conf_indices[nms_indices[i]];
+    proto_masks.row(original_idx).copyTo(final_masks.row(static_cast<int>(i)));
   }
 
   // // Process masks for each box (crop, resize, threshold) - in model input space

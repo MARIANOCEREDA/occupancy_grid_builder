@@ -137,7 +137,7 @@ class YoloONNXInference
   Ort::Value output_tensor_{nullptr};
 
   static constexpr int N_OUTPUTS_SEG = 2;
-  static constexpr float confidence_threshold_ = 0.6f;
+  static constexpr float confidence_threshold_ = 0.4f;
 
   /// Input node name.
   std::string input_name_;

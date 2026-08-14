@@ -134,8 +134,6 @@ class InferenceNode : public rclcpp_lifecycle::LifecycleNode
   std::string model_path_;
   std::string device_type_str_;
   yolo_onnx_inference::DeviceType device_type_;
-  /// If non-empty, only detections whose class_id is in this set are kept.
-  std::unordered_set<int> class_allowlist_;
 
   // Input Image multi-threading safety variables
   std::atomic<bool> new_image_available_{false};
