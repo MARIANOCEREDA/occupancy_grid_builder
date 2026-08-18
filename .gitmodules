@@ -2,3 +2,7 @@
 	path = src/external/kiss-icp
 	url = https://github.com/PRBonn/kiss-icp.git
 	branch = main
+[submodule "src/external/yolo-onnx-ros"]
+	path = src/external/yolo-onnx-ros
+	url = git@github.com:MARIANOCEREDA/yolo_onnx_ros.git
+	branch = main

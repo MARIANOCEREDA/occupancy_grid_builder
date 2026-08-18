@@ -107,15 +107,15 @@ def generate_launch_description():
 
     # --- Segmentation Inference ONNX Composable Node ---
     segmentation_inference_onnx_component = ComposableNode(
-        package='segmentation_inference_onnx_ros',
-        plugin='yolo_onnx_inference_ros::InferenceNode',
-        name='segmentation_inference_onnx_node',
+        package='yolo_onnx_ros',
+        plugin='yolo_onnx_ros::YoloSegmentorNode',
+        name='yolo_onnx_segmentor_node',
         parameters=[{
             'use_sim_time': LaunchConfiguration('use_sim_time'),
             'model_path': os.path.join(
-                get_package_share_directory('segmentation_inference_onnx_ros'), 
-                'models', 
-                'yolo11n-seg.onnx'
+                get_package_share_directory('occupancy_grid_builder_bringup'),
+                'models',
+                'yolov11n-seg.onnx'
             ),
             'device_type': 'CPU',
         }],
@@ -201,7 +201,7 @@ def generate_launch_description():
     # --- Lifecycle manager for all perception nodes in the container ---
     lifecycle_node_names = [
         'image_undistort_node',
-        'segmentation_inference_onnx_node',
+        'yolo_onnx_segmentor_node',
         'camera_lidar_fusion_node',
         'occupancy_grid_builder_node',
     ]

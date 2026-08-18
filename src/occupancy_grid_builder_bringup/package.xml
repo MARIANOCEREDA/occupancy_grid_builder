@@ -11,10 +11,11 @@
   <depend>camera_lidar_fusion</depend>
   <depend>image_undistort</depend>
   <depend>occupancy_grid_builder</depend>
-  <depend>segmentation_inference_onnx_ros</depend>
+  <depend>yolo_onnx_ros</depend>
   <depend>robot_description</depend>
   <depend>robot_localization</depend>
   <depend>rviz2</depend>
+  <depend>foxglove_bridge</depend>
   <depend>nav2_costmap_2d</depend>
   <depend>nav2_lifecycle_manager</depend>
   <depend>tf2_ros</depend>

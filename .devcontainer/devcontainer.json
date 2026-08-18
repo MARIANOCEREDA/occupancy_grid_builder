@@ -33,7 +33,8 @@
         "--env", "DISPLAY=${localEnv:DISPLAY}",
         "--env", "QT_X11_NO_MITSHM=1",
         "--gpus", "all",
-        "--shm-size=4g"
+        "--shm-size=4g",
+        "--network=host"
     ],
     "remoteUser": "dev",
     "postCreateCommand": "echo 'Devcontainer ready 🚀'"
