@@ -1,4 +1,3 @@
-[submodule "src/external/yolo-onnx-ros"]
-	path = src/external/yolo-onnx-ros
+[submodule "src/external"]
+	path = src/external
 	url = git@github.com:MARIANOCEREDA/yolo_onnx_ros.git
-	branch = main

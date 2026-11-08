@@ -32,7 +32,7 @@ BUILD_TYPE   ?= Release
         clean-occupancy-grid-builder clean-occupancy-grid-builder-cpp clean-occupancy-grid-builder-ros2 \
         clean-yolo-onnx-ros clean-yolo-onnx-ros-cpp clean-yolo-onnx-ros-ros2 \
         clean-all-cpp clean-all-ros2 clean-all \
-        install-rosdeps
+        install-rosdeps clone-gitmodules build-image-undistort-ros2
 
 help:
 	@echo ""
@@ -81,6 +81,22 @@ help:
 # ============================================================================
 # Camera-Lidar Fusion
 # ============================================================================
+
+build-image-undistort-ros2:
+	@echo ""
+	@echo "╔════════════════════════════════════════════════════════════════════════════╗"
+	@echo "║  Building image-undistort ROS2 wrapper                                     ║"
+	@echo "╚════════════════════════════════════════════════════════════════════════════╝"
+	@bash -c "source $(ROS_SETUP) && \
+		cd $(WS_ROOT) && \
+		colcon build \
+			--symlink-install \
+			--parallel-workers $(JOBS) \
+			--packages-select image_undistort \
+			--event-handlers console_cohesion+"
+	@echo "✓ image-undistort ROS2 wrapper built successfully"
+	@echo ""
+
 
 build-camera-lidar-fusion-cpp:
 	@echo ""
@@ -288,4 +304,14 @@ install-rosdeps:
 		rosdep update && \
 		rosdep install --from-paths src --ignore-src -r -y"
 	@echo "✓ ROS2 dependencies installed"
+	@echo ""
+
+clone-gitmodules:
+	@echo ""
+	@echo "╔════════════════════════════════════════════════════════════════════════════╗"
+	@echo "║  Initializing and updating git submodules                                   ║"
+	@echo "╚════════════════════════════════════════════════════════════════════════════╝"
+	@bash -c "cd $(WS_ROOT) && \
+		git submodule update --init --recursive"
+	@echo "✓ Git submodules cloned"
 	@echo ""
