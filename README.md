@@ -1,156 +1,112 @@
-# ROS 2 Workspace - Occupancy Grid Builder
+# ROS 2 Occupancy Grid Builder Workspace
 
-This workspace contains packages for building occupancy grids from sensor data including camera-LiDAR fusion, image processing, and SLAM.
+This workspace contains ROS 2 packages for LiDAR perception, ground segmentation, object labeling, localization, and occupancy-grid generation, together with the launch and configuration files that bring the system up.
 
-## Prerequisites
+## Requirements
 
+- Ubuntu 24.04
 - ROS 2 Jazzy
-- Ubuntu 24.04 (or compatible)
-- Python 3.12+
-- colcon build tools
+- `colcon` build tools
 
-## Workspace Structure
+## Get Submodules
 
-```
-src/
-├── camera_lidar_fusion/      # Camera-LiDAR fusion library and ROS node
-├── image_processing/          # Image processing ROS 2 package
-├── occupancy_grid_builder/    # Core occupancy grid builder
-├── occupancy_grid_builder_bringup/  # Launch files and configuration
-├── robot_description/         # Robot URDF and TF descriptions
-├── segmentation_inference/    # Segmentation inference using Ultralytics
-└── external/                  # External dependencies (KISS-ICP, etc.)
-```
-
-## Build Instructions
-
-### 1. Install System Dependencies
-
-```bash
-sudo apt update
-sudo apt install -y \
-  ros-jazzy-desktop \
-  python3-colcon-common-extensions \
-  python3-rosdep \
-  libeigen3-dev \
-  libopencv-dev \
-  libpcl-dev \
-  nlohmann-json3-dev
-```
-
-### 2. Set Environment Variable for pip
-
-```bash
-export PIP_BREAK_SYSTEM_PACKAGES=1
-```
-
-Add this to your `~/.bashrc` to make it permanent:
-```bash
-echo 'export PIP_BREAK_SYSTEM_PACKAGES=1' >> ~/.bashrc
-source ~/.bashrc
-```
-
-### 3. Register Custom rosdep.yaml
-
-The workspace uses a custom rosdep file for the Ultralytics package:
-
-```bash
-echo "yaml file:///home/dev/ws/src/segmentation_inference/rosdep.yaml" | sudo tee /etc/ros/rosdep/sources.list.d/70-rosdep-seg-inference.list
-```
-
-### 4. Install NumPy Constraint
-
-```bash
-pip install "numpy<2"
-```
-
-This ensures compatibility with packages that don't yet support NumPy 2.0.
-
-### 5. Install ROS Dependencies
-
-```bash
-sudo apt update && rosdep update && rosdep install --from-paths src --ignore-src -y --as-root pip:false
-```
-
-This will install all required ROS 2 packages and the Ultralytics package via pip.
-
-### 6. Build and source the Workspace
+The workspace includes Git submodules for ground segmentation, ONNX ROS, and KISS-ICP. After cloning the workspace, initialize and fetch them recursively:
 
 ```bash
 cd /home/dev/ws
-colcon build && source install/setup.bash
+git submodule update --init --recursive
 ```
 
-## Running the System
+This can also be done with `make clone-gitmodules` from the workspace root.
 
-### Launch the Occupancy Grid Builder
+Install the ROS and system dependencies required by the packages, then resolve package dependencies from the workspace:
+
+```bash
+cd /home/dev/ws
+rosdep update
+rosdep install --from-paths src --ignore-src -r -y
+```
+
+## Packages
+
+| Package | Description |
+| --- | --- |
+| `bbox_builder` | Builds bounding-box data from perception results. |
+| `ground_segmentation` | ROS 2 component and segmentation plugins for classifying ground points. |
+| `image_processing` | Image processing components, including image undistortion. |
+| `kiss_icp` | LiDAR odometry component. |
+| `occupancy_grid_builder` | Builds occupancy-grid output from perception data. |
+| `occupancy_grid_builder_bringup` | System launch files, configuration, and RViz setup. |
+| `pcl_labeler` | Labels and clusters point-cloud data. |
+| `robot_description` | Robot description and frame configuration. |
+| `segmentation_inference` | Segmentation inference package. |
+| `yolo_onnx_ros` | ROS 2 component for ONNX-based image segmentation. |
+
+## Build
+
+From the workspace root, build the C++ libraries and ROS 2 packages using the workspace Makefile:
+
+```bash
+cd /home/dev/ws
+make build-all
+source install/setup.bash
+```
+
+Alternatively, build the ROS 2 packages with `colcon` when their external C++ dependencies have already been built:
+
+```bash
+cd /home/dev/ws
+source /opt/ros/jazzy/setup.bash
+colcon build --symlink-install
+source install/setup.bash
+```
+
+## Architecture
+
+The diagram below shows the main data flow and ROS components in the workspace.
+
+![Occupancy Grid Builder architecture](docs/occupancy_grid_builder.drawio.png)
+
+## Run
+
+Launch the complete system:
 
 ```bash
 ros2 launch occupancy_grid_builder_bringup occupancy_grid_builder_bringup.launch.py
 ```
 
-#### Launch Arguments
+The launch file accepts these arguments:
 
-- `topic` (default: `/rslidar_points`): Input point cloud topic
-- `visualize` (default: `true`): Enable RViz visualization
-- `use_sim_time` (default: `false`): Use simulation time
+- `topic` (default: `/rslidar_points`): input point-cloud topic.
+- `visualize` (default: `true`): start RViz.
+- `use_sim_time` (default: `true`): use the simulation clock.
+- `base_frame` (default: `base_link`): robot base frame.
+- `lidar_odom_frame` (default: `odom`): LiDAR odometry frame.
 
-Example with custom arguments:
+For example, to use another input topic and disable RViz:
+
 ```bash
 ros2 launch occupancy_grid_builder_bringup occupancy_grid_builder_bringup.launch.py \
   topic:=/custom_points \
-  visualize:=true \
+  visualize:=false \
   use_sim_time:=false
 ```
 
-### Launching the local costmap (if needed)
+When playing a ROS bag, publish its clock so nodes using simulation time stay synchronized:
 
 ```bash
-ros2 run nav2_costmap_2d nav2_costmap_2d --ros-args -r __ns:=/local_costmap -r __node:=local_costmap --params-file /home/dev/ws/src/occupancy_grid_builder_bringup/config/local_costmap.yaml
+ros2 bag play <bag_directory> --clock
 ```
 
-Configure and activate the local costmap using lifecycle services:
-```bash
-ros2 lifecycle set local_costmap/local_costmap configure
-ros2 lifecycle set local_costmap/local_costmap activate
-```
-
-## Cleaning Build Artifacts
+## Clean Build Artifacts
 
 ```bash
 cd /home/dev/ws
-rm -rf build install log
+make clean-all
 ```
 
-### Using ROSBAGS
+## TODO
 
-When using rosbags, make sure the --clock flag is enabled to synchronize time with the bag file:
-```bash
-ros2 bag play my_bag_file --clock
-```
-
-## Troubleshooting
-
-### Issue: rosdep fails to find ultralytics
-**Solution**: Make sure the custom rosdep.yaml is registered (step 3) and run `rosdep update`
-
-### Issue: pip installation fails
-**Solution**: Ensure `PIP_BREAK_SYSTEM_PACKAGES=1` is set (step 2)
-
-## Package Details
-
-### camera_lidar_fusion
-- **C++ Library**: ROS-agnostic library for fusing camera masks with LiDAR point clouds
-- **ROS Node**: Subscribes to segmentation masks and point clouds, publishes labeled point clouds
-
-### segmentation_inference
-- Segmentation inference using Ultralytics YOLO models
-- Requires: `ultralytics` Python package (installed via rosdep)
-
-### occupancy_grid_builder
-- Core occupancy grid building from sensor data
-- Includes SLAM integration (KISS-ICP)
-
-### occupancy_grid_builder_bringup
-- Launch files and configuration for the complete system
-- RViz configuration included
+- Add a cluster-size limit for PCL clusters.
+- Add filtering techniques to reduce the number of points.
+- Remove cluster outliers.
