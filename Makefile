@@ -9,7 +9,7 @@ WS_ROOT      := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 
 # Camera-Lidar Fusion paths
 CAMERA_LIDAR_FUSION_SRC    := $(WS_ROOT)/src/pcl_labeler
-CAMERA_LIDAR_FUSION_CPP     := $(CAMERA_LIDAR_FUSION_SRC)/cpp/build
+PCL_LABELER     := $(CAMERA_LIDAR_FUSION_SRC)/cpp/build
 
 # Occupancy Grid Builder paths
 OCCUPANCY_GRID_BUILDER_SRC := $(WS_ROOT)/src/occupancy_grid_builder
@@ -103,11 +103,11 @@ build-pcl-labeler-cpp:
 	@echo "╔════════════════════════════════════════════════════════════════════════════╗"
 	@echo "║  Building pcl-labeler C++ library                                  ║"
 	@echo "╚════════════════════════════════════════════════════════════════════════════╝"
-	@mkdir -p $(CAMERA_LIDAR_FUSION_CPP)
-	@cd $(CAMERA_LIDAR_FUSION_CPP) && \
+	@mkdir -p $(PCL_LABELER)
+	@cd $(PCL_LABELER) && \
 		cmake .. \
 			-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
-			-DCMAKE_INSTALL_PREFIX=$(CAMERA_LIDAR_FUSION_CPP)/install && \
+			-DCMAKE_INSTALL_PREFIX=$(PCL_LABELER)/install && \
 		make -j$(JOBS) && \
 		make install
 	@echo " pcl-labeler C++ library built successfully"
@@ -124,7 +124,7 @@ build-pcl-labeler-ros2: build-pcl-labeler-cpp
 			--symlink-install \
 			--parallel-workers $(JOBS) \
 			--packages-select pcl_labeler \
-			--cmake-args -DCAMERA_LIDAR_FUSION_CPP=$(CAMERA_LIDAR_FUSION_CPP) \
+			--cmake-args -DPCL_LABELER=$(PCL_LABELER) \
 			--event-handlers console_cohesion+"
 	@echo " pcl-labeler ROS2 wrapper built successfully"
 	@echo ""
@@ -133,7 +133,7 @@ build-pcl-labeler: build-pcl-labeler-ros2
 
 clean-pcl-labeler-cpp:
 	@echo "==> Cleaning pcl-labeler C++ library..."
-	@rm -rf $(CAMERA_LIDAR_FUSION_CPP)
+	@rm -rf $(PCL_LABELER)
 	@echo " Done"
 
 clean-pcl-labeler-ros2:
@@ -260,7 +260,7 @@ build-all-ros2: build-all-cpp
 			--symlink-install \
 			--parallel-workers $(JOBS) \
 			--cmake-args \
-				-DCAMERA_LIDAR_FUSION_CPP=$(CAMERA_LIDAR_FUSION_CPP) \
+				-DPCL_LABELER=$(PCL_LABELER) \
 				-DOCCUPANCY_GRID_BUILDER_CPP=$(OCCUPANCY_GRID_BUILDER_CPP) \
 				-DYOLO_CPP_PREFIX=$(YOLO_ONNX_CPP) \
 			--event-handlers console_cohesion+"

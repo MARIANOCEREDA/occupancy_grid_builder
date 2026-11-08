@@ -180,7 +180,7 @@ def generate_launch_description():
         name='perception_container',
         namespace='',
         package='rclcpp_components',
-        executable='component_container',
+        executable='component_container_mt',
         composable_node_descriptions=[
             kiss_icp_component,
             image_undistort_component,

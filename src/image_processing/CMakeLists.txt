@@ -42,12 +42,13 @@ target_include_directories(${COMPONENT_NAME} PUBLIC
 
 install(
   TARGETS ${COMPONENT_NAME}
+  EXPORT export_${PROJECT_NAME}
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
   RUNTIME DESTINATION lib
 )
 
 ament_export_include_directories(include)
-ament_export_targets(${COMPONENT_NAME})
+ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
 
 ament_package()

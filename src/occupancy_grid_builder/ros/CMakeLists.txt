@@ -50,26 +50,6 @@ set(NODE_NAME ${PROJECT_NAME}_node)
 set(SOURCES src/occupancy_grid_builder_node.cpp)
 set(HEADERS include/occupancy_grid_builder/occupancy_grid_builder_node.hpp)
 
-# Build composable node library
-add_executable(${NODE_NAME} ${SOURCES} ${HEADERS})
-ament_target_dependencies(${NODE_NAME}
-  rclcpp
-  rclcpp_components
-  rclcpp_lifecycle
-  sensor_msgs
-  nav_msgs
-  std_msgs
-  geometry_msgs
-  lifecycle_msgs
-  tf2_ros
-  tf2_eigen
-  pcl_conversions
-)
-target_link_libraries(${NODE_NAME}
-  occupancy_grid_builder_cpp
-  ${PCL_LIBRARIES}
-)
-
 add_library(${COMPONENT_NAME} SHARED ${SOURCES} ${HEADERS})
 ament_target_dependencies(
   ${COMPONENT_NAME}
@@ -86,12 +66,8 @@ ament_target_dependencies(
   pcl_conversions
 )
 target_link_libraries(${COMPONENT_NAME} occupancy_grid_builder_cpp ${PCL_LIBRARIES})
-rclcpp_components_register_nodes(${COMPONENT_NAME} "occupancy_grid_builder::OccupancyGridBuilderNode")
+rclcpp_components_register_node(${COMPONENT_NAME} PLUGIN "occupancy_grid_builder::OccupancyGridBuilderNode" EXECUTABLE ${NODE_NAME})
 
-target_include_directories(${NODE_NAME} PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
-)
 target_include_directories(${COMPONENT_NAME} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
@@ -99,15 +75,13 @@ target_include_directories(${COMPONENT_NAME} PUBLIC
 
 install(
   TARGETS ${COMPONENT_NAME}
+  EXPORT export_${PROJECT_NAME}
   LIBRARY DESTINATION lib
-)
-
-install(
-  TARGETS ${NODE_NAME}
-  DESTINATION lib/${PROJECT_NAME}
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin
 )
 
 ament_export_include_directories(include)
-ament_export_targets(${COMPONENT_NAME})
+ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
 
 ament_package()
