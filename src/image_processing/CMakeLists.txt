@@ -40,6 +40,8 @@ target_include_directories(${COMPONENT_NAME} PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 
+install(DIRECTORY include/ DESTINATION include)
+
 install(
   TARGETS ${COMPONENT_NAME}
   EXPORT export_${PROJECT_NAME}

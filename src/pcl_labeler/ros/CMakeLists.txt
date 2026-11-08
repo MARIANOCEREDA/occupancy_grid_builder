@@ -64,6 +64,8 @@ target_include_directories(${COMPONENT_NAME} PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 
+install(DIRECTORY include/ DESTINATION include)
+
 install(
   TARGETS ${COMPONENT_NAME}
   EXPORT export_${PROJECT_NAME}
@@ -71,6 +73,7 @@ install(
   ARCHIVE DESTINATION lib
   RUNTIME DESTINATION bin
 )
+
 
 ament_export_include_directories(include)
 ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
