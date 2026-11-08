@@ -23,7 +23,7 @@ local_costmap:
         enabled: True
         observation_sources: pointcloud
         pointcloud:
-          topic: /points_labeled
+          topic: /segmented_points_non_ground
           max_obstacle_height: 4.0
           clearing: True
           marking: True

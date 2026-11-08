@@ -1,7 +1,7 @@
 occupancy_grid_builder_node:
   ros__parameters:
     # Topic names
-    pointcloud_topic: "/points_labeled"
+    pointcloud_topic: "/segmented_points_non_ground"
     grid_topic: "/map"
     
     # Frame names

@@ -1,25 +1,25 @@
 cmake_minimum_required(VERSION 3.22.1)
-project(mask_lidar_fusion)
+project(pcl_labeler_cpp)
 
 find_package(OpenCV REQUIRED)
 find_package(PCL REQUIRED COMPONENTS common)
 find_package(nlohmann_json REQUIRED)
 
-include_directories(include ${OpenCV_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS})
+include_directories(include ${OpenCV_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${nlohmann_json_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
 set(HEADERS 
-    include/mask_lidar_fusion/mask_lidar_fusion.hpp
+    include/pcl_labeler/pcl_labeler.hpp
     include/mask_lidar_fusion/extrinsics_parser.hpp
 )
 
 set(SOURCES 
-    src/mask_lidar_fusion.cpp
+    src/pcl_labeler.cpp
     src/extrinsics_parser.cpp
 )
 
-add_library(${PROJECT_NAME} SHARED ${SOURCES} ${HEADERS})
+add_library(${PROJECT_NAME} SHARED ${SOURCES})
 
 target_include_directories(${PROJECT_NAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

@@ -4,7 +4,7 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <tf2_eigen/tf2_eigen.hpp>
 
-#include "mask_lidar_fusion/mask_lidar_fusion.hpp"
+#include "pcl_labeler/pcl_labeler.hpp"
 
 namespace pcl_labeler
 {
@@ -61,7 +61,7 @@ CallbackReturn PCLLabelerNode::on_configure(const rclcpp_lifecycle::State&)
       camera_sub_options);
   lidar_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
       point_cloud_topic,
-      10,
+      rclcpp::SensorDataQoS(),
       std::bind(&PCLLabelerNode::lidar_callback, this, std::placeholders::_1));
 
   RCLCPP_INFO(get_logger(), "Camera-LiDAR Fusion Node configured.");
@@ -184,7 +184,7 @@ void PCLLabelerNode::label_point_cloud()
     pcl_cloud_->clear();
     pcl::fromROSMsg(input_cloud, *pcl_cloud_);
 
-    // 4. Setup mask_lidar_fusion and call fuse()
+    // 4. Setup the pcl labeler and call fuse()
     mask_lidar_fusion::MaskLidarFusion fusion;
 
     // Convert camera intrinsics to Eigen

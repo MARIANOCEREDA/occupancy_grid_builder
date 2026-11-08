@@ -87,6 +87,19 @@ def generate_launch_description():
         condition=IfCondition(LaunchConfiguration('visualize'))
     )
 
+    # --- Ground Segmentation Composable Node ---
+    ground_segmentation_config = os.path.join(
+        get_package_share_directory('occupancy_grid_builder_bringup'),
+        'config',
+        'ground_segmentation_node.yaml'
+    )
+    ground_segmentation_component = ComposableNode(
+        package='ground_segmentation',
+        plugin='ground_segmentation::GroundSegmentationNode',
+        name='ground_segmentation_node',
+        parameters=[ground_segmentation_config],
+    )
+
     # --- Image undistort Composable Node ---
     image_undistort_component = ComposableNode(
         package='image_processing',
@@ -114,13 +127,14 @@ def generate_launch_description():
         }],
     )
 
-    # --- Camera-LiDAR Fusion Composable Node ---
+    # --- PCL Labeler Composable Node ---
     pcl_labeler_component = ComposableNode(
         package='pcl_labeler',
         plugin='pcl_labeler::PCLLabelerNode',
         name='pcl_labeler_node',
         parameters=[{
             'use_sim_time': LaunchConfiguration('use_sim_time'),
+            'point_cloud_topic': "/rslidar_points"
         }],
     )
 
@@ -183,6 +197,7 @@ def generate_launch_description():
         executable='component_container_mt',
         composable_node_descriptions=[
             kiss_icp_component,
+            ground_segmentation_component,
             image_undistort_component,
             segmentation_inference_onnx_component,
             pcl_labeler_component,

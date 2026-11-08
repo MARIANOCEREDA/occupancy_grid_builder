@@ -22,6 +22,7 @@
   <depend>launch</depend>
   <depend>launch_ros</depend>
   <depend>lifecycle_msgs</depend>
+  <depend>ground_segmentation</depend>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 

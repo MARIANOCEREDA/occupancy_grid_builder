@@ -20,20 +20,19 @@ find_package(tf2_ros REQUIRED)
 find_package(tf2_eigen REQUIRED)
 find_package(PCL REQUIRED COMPONENTS common)
 find_package(pcl_conversions REQUIRED)
+find_package(nlohmann_json REQUIRED)
 
-# Find the mask_lidar_fusion C++ library
-if(DEFINED CAMERA_LIDAR_FUSION_CPP)
+# Find the pcl_labeler_cpp C++ library
+if(DEFINED PCL_LABELER_CPP)
   # Using the library built in the cpp/ folder
-  set(mask_lidar_fusion_DIR "${CAMERA_LIDAR_FUSION_CPP}/install/lib/cmake/mask_lidar_fusion")
-  set(mask_lidar_fusion_INCLUDE_DIR "${CAMERA_LIDAR_FUSION_CPP}/install/include")
-  set(mask_lidar_fusion_LIB_DIR "${CAMERA_LIDAR_FUSION_CPP}/install/lib")
-  find_package(mask_lidar_fusion REQUIRED PATHS ${mask_lidar_fusion_DIR} NO_DEFAULT_PATH)
+  set(pcl_labeler_cpp_DIR "${PCL_LABELER_CPP}/install/lib/cmake/pcl_labeler_cpp")
+  find_package(pcl_labeler_cpp REQUIRED PATHS ${pcl_labeler_cpp_DIR} NO_DEFAULT_PATH)
 else()
-  find_package(mask_lidar_fusion REQUIRED)
+  find_package(pcl_labeler_cpp REQUIRED)
 endif()
 
-include_directories(include ${PCL_INCLUDE_DIRS} ${mask_lidar_fusion_INCLUDE_DIR})
-link_directories(${PCL_LIBRARY_DIRS} ${mask_lidar_fusion_LIB_DIR})
+include_directories(include ${PCL_INCLUDE_DIRS})
+link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
 set(COMPONENT_NAME ${PROJECT_NAME}_component)
@@ -56,7 +55,7 @@ ament_target_dependencies(
   tf2_eigen
   pcl_conversions
 )
-target_link_libraries(${COMPONENT_NAME} mask_lidar_fusion ${PCL_LIBRARIES})
+target_link_libraries(${COMPONENT_NAME} pcl_labeler_cpp::pcl_labeler_cpp ${PCL_LIBRARIES})
 rclcpp_components_register_node(${COMPONENT_NAME} PLUGIN "pcl_labeler::PCLLabelerNode" EXECUTABLE ${NODE_NAME})
 
 target_include_directories(${COMPONENT_NAME} PUBLIC

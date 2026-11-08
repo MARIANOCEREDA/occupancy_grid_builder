@@ -57,7 +57,7 @@ CallbackReturn OccupancyGridBuilderNode::on_activate(const rclcpp_lifecycle::Sta
 
   pointcloud_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
       pointcloud_topic_,
-      rclcpp::QoS(10),
+      rclcpp::SensorDataQoS(),
       std::bind(&OccupancyGridBuilderNode::pointCloudCallback, this, std::placeholders::_1));
 
   processing_thread_ = std::jthread(&OccupancyGridBuilderNode::gridBuilderThread, this);

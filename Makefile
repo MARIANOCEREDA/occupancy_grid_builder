@@ -7,9 +7,9 @@ ROS_SETUP     = /opt/ros/$(ROS_DISTRO)/setup.bash
 # Workspace paths
 WS_ROOT      := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 
-# Camera-Lidar Fusion paths
-CAMERA_LIDAR_FUSION_SRC    := $(WS_ROOT)/src/pcl_labeler
-PCL_LABELER     := $(CAMERA_LIDAR_FUSION_SRC)/cpp/build
+# PCL Labeler paths
+PCL_LABELER_SRC    := $(WS_ROOT)/src/pcl_labeler
+PCL_LABELER_CPP    := $(PCL_LABELER_SRC)/cpp/build
 
 # Occupancy Grid Builder paths
 OCCUPANCY_GRID_BUILDER_SRC := $(WS_ROOT)/src/occupancy_grid_builder
@@ -19,6 +19,11 @@ OCCUPANCY_GRID_BUILDER_CPP  := $(OCCUPANCY_GRID_BUILDER_SRC)/cpp/build
 YOLO_ONNX_ROS_SRC := $(WS_ROOT)/src/yolo_onnx_ros
 YOLO_ONNX_CPP    := $(YOLO_ONNX_ROS_SRC)/src/yolo_onnx_ros/cpp/build
 
+# Ground Segmentation paths
+GROUND_SEGMENTATION_SRC := $(WS_ROOT)/src/ground_segmentation
+GROUND_SEGMENTATION_CPP_SRC := $(GROUND_SEGMENTATION_SRC)/src/ground_segmentation/core
+GROUND_SEGMENTATION_CPP := $(GROUND_SEGMENTATION_CPP_SRC)/build
+
 # Build settings
 JOBS         ?= $(shell nproc)
 BUILD_TYPE   ?= Release
@@ -27,10 +32,12 @@ BUILD_TYPE   ?= Release
         build-pcl-labeler build-pcl-labeler-cpp build-pcl-labeler-ros2 \
         build-occupancy-grid-builder build-occupancy-grid-builder-cpp build-occupancy-grid-builder-ros2 \
         build-yolo-onnx-ros build-yolo-onnx-ros-cpp build-yolo-onnx-ros-ros2 \
+		build-ground-segmentation build-ground-segmentation-cpp build-ground-segmentation-ros2 \
         build-all-cpp build-all-ros2 build-all \
         clean-pcl-labeler clean-pcl-labeler-cpp clean-pcl-labeler-ros2 \
         clean-occupancy-grid-builder clean-occupancy-grid-builder-cpp clean-occupancy-grid-builder-ros2 \
         clean-yolo-onnx-ros clean-yolo-onnx-ros-cpp clean-yolo-onnx-ros-ros2 \
+		clean-ground-segmentation clean-ground-segmentation-cpp clean-ground-segmentation-ros2 \
         clean-all-cpp clean-all-ros2 clean-all \
 		install-rosdeps clone-gitmodules build-image-processing-ros2
 
@@ -49,6 +56,9 @@ help:
 	@echo "  build-occupancy-grid-builder-cpp   Build occupancy-grid-builder C++ library only"
 	@echo "  build-occupancy-grid-builder-ros2  Build occupancy-grid-builder ROS2 wrapper only"
 	@echo ""
+	@echo "  build-ground-segmentation          Build ground-segmentation (cpp + ros2)"
+	@echo "  build-ground-segmentation-cpp      Build ground-segmentation C++ core only"
+	@echo "  build-ground-segmentation-ros2     Build ground-segmentation ROS2 package only"
 	@echo ""
 	@echo "Aggregate Build Targets:"
 	@echo "  build-all-cpp                      Build all C++ libraries"
@@ -64,6 +74,9 @@ help:
 	@echo "  clean-occupancy-grid-builder-cpp   Clean occupancy-grid-builder C++ library"
 	@echo "  clean-occupancy-grid-builder-ros2  Clean occupancy-grid-builder ROS2 build"
 	@echo ""
+	@echo "  clean-ground-segmentation          Clean ground-segmentation build artifacts"
+	@echo "  clean-ground-segmentation-cpp      Clean ground-segmentation C++ core build"
+	@echo "  clean-ground-segmentation-ros2     Clean ground-segmentation ROS2 build"
 	@echo ""
 	@echo "  clean-all-cpp                      Clean all C++ library builds"
 	@echo "  clean-all-ros2                     Clean all ROS2 builds"
@@ -93,6 +106,7 @@ build-image-processing-ros2:
 			--symlink-install \
 			--parallel-workers $(JOBS) \
 			--packages-select image_processing \
+			--cmake-args -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
 			--event-handlers console_cohesion+"
 	@echo " image-processing ROS2 package built successfully"
 	@echo ""
@@ -103,11 +117,11 @@ build-pcl-labeler-cpp:
 	@echo "╔════════════════════════════════════════════════════════════════════════════╗"
 	@echo "║  Building pcl-labeler C++ library                                  ║"
 	@echo "╚════════════════════════════════════════════════════════════════════════════╝"
-	@mkdir -p $(PCL_LABELER)
-	@cd $(PCL_LABELER) && \
+	@mkdir -p $(PCL_LABELER_CPP)
+	@cd $(PCL_LABELER_CPP) && \
 		cmake .. \
 			-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
-			-DCMAKE_INSTALL_PREFIX=$(PCL_LABELER)/install && \
+			-DCMAKE_INSTALL_PREFIX=$(PCL_LABELER_CPP)/install && \
 		make -j$(JOBS) && \
 		make install
 	@echo " pcl-labeler C++ library built successfully"
@@ -124,7 +138,7 @@ build-pcl-labeler-ros2: build-pcl-labeler-cpp
 			--symlink-install \
 			--parallel-workers $(JOBS) \
 			--packages-select pcl_labeler \
-			--cmake-args -DPCL_LABELER=$(PCL_LABELER) \
+			--cmake-args -DPCL_LABELER_CPP=$(PCL_LABELER_CPP) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
 			--event-handlers console_cohesion+"
 	@echo " pcl-labeler ROS2 wrapper built successfully"
 	@echo ""
@@ -133,7 +147,7 @@ build-pcl-labeler: build-pcl-labeler-ros2
 
 clean-pcl-labeler-cpp:
 	@echo "==> Cleaning pcl-labeler C++ library..."
-	@rm -rf $(PCL_LABELER)
+	@rm -rf $(PCL_LABELER_CPP)
 	@echo " Done"
 
 clean-pcl-labeler-ros2:
@@ -174,7 +188,7 @@ build-occupancy-grid-builder-ros2: build-occupancy-grid-builder-cpp
 			--symlink-install \
 			--parallel-workers $(JOBS) \
 			--packages-select occupancy_grid_builder \
-			--cmake-args -DOCCUPANCY_GRID_BUILDER_CPP=$(OCCUPANCY_GRID_BUILDER_CPP) \
+			--cmake-args -DOCCUPANCY_GRID_BUILDER_CPP=$(OCCUPANCY_GRID_BUILDER_CPP) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
 			--event-handlers console_cohesion+"
 	@echo " occupancy-grid-builder ROS2 wrapper built successfully"
 	@echo ""
@@ -193,6 +207,52 @@ clean-occupancy-grid-builder-ros2:
 	@echo " Done"
 
 clean-occupancy-grid-builder: clean-occupancy-grid-builder-cpp clean-occupancy-grid-builder-ros2
+
+# ============================================================================
+# Ground Segmentation
+# ============================================================================
+
+build-ground-segmentation-cpp:
+	@echo ""
+	@echo "╔════════════════════════════════════════════════════════════════════════════╗"
+	@echo "║  Building ground-segmentation C++ core                                     ║"
+	@echo "╚════════════════════════════════════════════════════════════════════════════╝"
+	@cmake -S $(GROUND_SEGMENTATION_CPP_SRC) -B $(GROUND_SEGMENTATION_CPP) \
+		-DCMAKE_BUILD_TYPE=$(BUILD_TYPE)
+	@cmake --build $(GROUND_SEGMENTATION_CPP) --parallel $(JOBS)
+	@echo " ground-segmentation C++ core built successfully"
+	@echo ""
+
+build-ground-segmentation-ros2: build-ground-segmentation-cpp
+	@echo ""
+	@echo "╔════════════════════════════════════════════════════════════════════════════╗"
+	@echo "║  Building ground-segmentation ROS2 package                                 ║"
+	@echo "╚════════════════════════════════════════════════════════════════════════════╝"
+	@bash -c "source $(ROS_SETUP) && \
+		cd $(WS_ROOT) && \
+		colcon build \
+			--symlink-install \
+			--parallel-workers $(JOBS) \
+			--packages-select ground_segmentation \
+			--cmake-args -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
+			--event-handlers console_cohesion+"
+	@echo " ground-segmentation ROS2 package built successfully"
+	@echo ""
+
+build-ground-segmentation: build-ground-segmentation-ros2
+
+clean-ground-segmentation-cpp:
+	@echo "==> Cleaning ground-segmentation C++ core..."
+	@rm -rf $(GROUND_SEGMENTATION_CPP)
+	@echo " Done"
+
+clean-ground-segmentation-ros2:
+	@echo "==> Cleaning ground-segmentation ROS2 build..."
+	@rm -rf $(WS_ROOT)/build/ground_segmentation
+	@rm -rf $(WS_ROOT)/install/ground_segmentation
+	@echo " Done"
+
+clean-ground-segmentation: clean-ground-segmentation-cpp clean-ground-segmentation-ros2
 
 # ============================================================================
 # YOLO ONNX ROS
@@ -218,7 +278,7 @@ build-yolo-onnx-ros-ros2: build-yolo-onnx-ros-cpp
 			--symlink-install \
 			--parallel-workers $(JOBS) \
 			--packages-select yolo_onnx_ros \
-			--cmake-args -DYOLO_CPP_PREFIX=$(YOLO_ONNX_CPP) \
+			--cmake-args -DYOLO_CPP_PREFIX=$(YOLO_ONNX_CPP) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
 			--event-handlers console_cohesion+"
 	@echo " yolo-onnx-ros ROS2 wrapper built successfully"
 	@echo ""
@@ -242,7 +302,7 @@ clean-yolo-onnx-ros: clean-yolo-onnx-ros-cpp clean-yolo-onnx-ros-ros2
 # Aggregate Targets
 # ============================================================================
 
-build-all-cpp: build-pcl-labeler-cpp build-occupancy-grid-builder-cpp build-yolo-onnx-ros-cpp
+build-all-cpp: build-pcl-labeler-cpp build-occupancy-grid-builder-cpp build-yolo-onnx-ros-cpp build-ground-segmentation-cpp
 	@echo ""
 	@echo "╔════════════════════════════════════════════════════════════════════════════╗"
 	@echo "║  All C++ libraries built successfully                                      ║"
@@ -260,9 +320,11 @@ build-all-ros2: build-all-cpp
 			--symlink-install \
 			--parallel-workers $(JOBS) \
 			--cmake-args \
-				-DPCL_LABELER=$(PCL_LABELER) \
+				-DPCL_LABELER_CPP=$(PCL_LABELER_CPP) \
 				-DOCCUPANCY_GRID_BUILDER_CPP=$(OCCUPANCY_GRID_BUILDER_CPP) \
 				-DYOLO_CPP_PREFIX=$(YOLO_ONNX_CPP) \
+				-DGROUND_SEGMENTATION_CPP=$(GROUND_SEGMENTATION_CPP) \
+				-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
 			--event-handlers console_cohesion+"
 	@echo ""
 	@echo "╔════════════════════════════════════════════════════════════════════════════╗"
@@ -278,7 +340,7 @@ build-all: build-all-ros2
 	@echo ""
 	@bash -c "source $(WS_ROOT)/install/setup.bash"
 
-clean-all-cpp: clean-pcl-labeler-cpp clean-occupancy-grid-builder-cpp clean-yolo-onnx-ros-cpp
+clean-all-cpp: clean-pcl-labeler-cpp clean-occupancy-grid-builder-cpp clean-yolo-onnx-ros-cpp clean-ground-segmentation-cpp
 	@echo " All C++ libraries cleaned"
 
 clean-all-ros2:
