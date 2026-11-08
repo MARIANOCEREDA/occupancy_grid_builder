@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(image_undistort)
+project(image_processing)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -21,7 +21,7 @@ set(COMPONENT_NAME ${PROJECT_NAME}_component)
 set(NODE_NAME ${PROJECT_NAME}_node)
 
 set(SOURCES src/image_undistort.cpp)
-set(HEADERS include/image_undistort/image_undistort.hpp)
+set(HEADERS include/image_processing/image_undistort.hpp)
 
 add_library(${COMPONENT_NAME} SHARED ${SOURCES} ${HEADERS})
 ament_target_dependencies(

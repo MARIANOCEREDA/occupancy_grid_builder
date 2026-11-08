@@ -96,7 +96,7 @@ def generate_launch_description():
 
     # --- Image undistort Composable Node ---
     image_undistort_component = ComposableNode(
-        package='image_undistort',
+        package='image_processing',
         plugin='image_undistort::ImageUndistort',
         name='image_undistort_node',
         parameters=[{

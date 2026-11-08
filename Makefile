@@ -32,7 +32,7 @@ BUILD_TYPE   ?= Release
         clean-occupancy-grid-builder clean-occupancy-grid-builder-cpp clean-occupancy-grid-builder-ros2 \
         clean-yolo-onnx-ros clean-yolo-onnx-ros-cpp clean-yolo-onnx-ros-ros2 \
         clean-all-cpp clean-all-ros2 clean-all \
-        install-rosdeps clone-gitmodules build-image-undistort-ros2
+		install-rosdeps clone-gitmodules build-image-processing-ros2
 
 help:
 	@echo ""
@@ -82,19 +82,19 @@ help:
 # Camera-Lidar Fusion
 # ============================================================================
 
-build-image-undistort-ros2:
+build-image-processing-ros2:
 	@echo ""
 	@echo "╔════════════════════════════════════════════════════════════════════════════╗"
-	@echo "║  Building image-undistort ROS2 wrapper                                     ║"
+	@echo "║  Building image-processing ROS2 package                                    ║"
 	@echo "╚════════════════════════════════════════════════════════════════════════════╝"
 	@bash -c "source $(ROS_SETUP) && \
 		cd $(WS_ROOT) && \
 		colcon build \
 			--symlink-install \
 			--parallel-workers $(JOBS) \
-			--packages-select image_undistort \
+			--packages-select image_processing \
 			--event-handlers console_cohesion+"
-	@echo "✓ image-undistort ROS2 wrapper built successfully"
+	@echo "✓ image-processing ROS2 package built successfully"
 	@echo ""
 
 

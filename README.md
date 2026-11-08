@@ -14,7 +14,7 @@ This workspace contains packages for building occupancy grids from sensor data i
 ```
 src/
 ├── camera_lidar_fusion/      # Camera-LiDAR fusion library and ROS node
-├── image_undistort/           # Image undistortion utilities
+├── image_processing/          # Image processing ROS 2 package
 ├── occupancy_grid_builder/    # Core occupancy grid builder
 ├── occupancy_grid_builder_bringup/  # Launch files and configuration
 ├── robot_description/         # Robot URDF and TF descriptions
