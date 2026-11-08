@@ -1,3 +1,6 @@
-[submodule "src/external"]
-	path = src/external
+[submodule "src/ground_segmentation"]
+	path = src/ground_segmentation
+	url = git@github.com:MARIANOCEREDA/ground_segmentation.git
+[submodule "src/yolo_onnx_ros"]
+	path = src/yolo_onnx_ros
 	url = git@github.com:MARIANOCEREDA/yolo_onnx_ros.git
