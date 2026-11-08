@@ -39,7 +39,6 @@ rosdep install --from-paths src --ignore-src -r -y
 | `occupancy_grid_builder_bringup` | System launch files, configuration, and RViz setup. |
 | `pcl_labeler` | Labels and clusters point-cloud data. |
 | `robot_description` | Robot description and frame configuration. |
-| `segmentation_inference` | Segmentation inference package. |
 | `yolo_onnx_ros` | ROS 2 component for ONNX-based image segmentation. |
 
 ## Build
