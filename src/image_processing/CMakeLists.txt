@@ -47,4 +47,7 @@ install(
   RUNTIME DESTINATION lib
 )
 
+ament_export_include_directories(include)
+ament_export_targets(${COMPONENT_NAME})
+
 ament_package()

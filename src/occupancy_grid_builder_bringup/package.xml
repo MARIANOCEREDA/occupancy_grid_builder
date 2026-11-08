@@ -8,7 +8,7 @@
   <license>MIT</license>
 
   <depend>kiss_icp</depend>
-  <depend>camera_lidar_fusion</depend>
+  <depend>pcl_labeler</depend>
   <depend>image_processing</depend>
   <depend>occupancy_grid_builder</depend>
   <depend>yolo_onnx_ros</depend>

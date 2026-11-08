@@ -8,7 +8,7 @@ ROS_SETUP     = /opt/ros/$(ROS_DISTRO)/setup.bash
 WS_ROOT      := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 
 # Camera-Lidar Fusion paths
-CAMERA_LIDAR_FUSION_SRC    := $(WS_ROOT)/src/camera_lidar_fusion
+CAMERA_LIDAR_FUSION_SRC    := $(WS_ROOT)/src/pcl_labeler
 CAMERA_LIDAR_FUSION_CPP     := $(CAMERA_LIDAR_FUSION_SRC)/cpp/build
 
 # Occupancy Grid Builder paths
@@ -16,7 +16,7 @@ OCCUPANCY_GRID_BUILDER_SRC := $(WS_ROOT)/src/occupancy_grid_builder
 OCCUPANCY_GRID_BUILDER_CPP  := $(OCCUPANCY_GRID_BUILDER_SRC)/cpp/build
 
 # YOLO ONNX ROS paths
-YOLO_ONNX_ROS_SRC := $(WS_ROOT)/src/external/yolo-onnx-ros
+YOLO_ONNX_ROS_SRC := $(WS_ROOT)/src/yolo_onnx_ros
 YOLO_ONNX_CPP    := $(YOLO_ONNX_ROS_SRC)/src/yolo_onnx_ros/cpp/build
 
 # Build settings
@@ -24,11 +24,11 @@ JOBS         ?= $(shell nproc)
 BUILD_TYPE   ?= Release
 
 .PHONY: help \
-        build-camera-lidar-fusion build-camera-lidar-fusion-cpp build-camera-lidar-fusion-ros2 \
+        build-pcl-labeler build-pcl-labeler-cpp build-pcl-labeler-ros2 \
         build-occupancy-grid-builder build-occupancy-grid-builder-cpp build-occupancy-grid-builder-ros2 \
         build-yolo-onnx-ros build-yolo-onnx-ros-cpp build-yolo-onnx-ros-ros2 \
         build-all-cpp build-all-ros2 build-all \
-        clean-camera-lidar-fusion clean-camera-lidar-fusion-cpp clean-camera-lidar-fusion-ros2 \
+        clean-pcl-labeler clean-pcl-labeler-cpp clean-pcl-labeler-ros2 \
         clean-occupancy-grid-builder clean-occupancy-grid-builder-cpp clean-occupancy-grid-builder-ros2 \
         clean-yolo-onnx-ros clean-yolo-onnx-ros-cpp clean-yolo-onnx-ros-ros2 \
         clean-all-cpp clean-all-ros2 clean-all \
@@ -41,9 +41,9 @@ help:
 	@echo "╚════════════════════════════════════════════════════════════════════════════╝"
 	@echo ""
 	@echo "Component Build Targets:"
-	@echo "  build-camera-lidar-fusion          Build camera-lidar-fusion (cpp + ros2)"
-	@echo "  build-camera-lidar-fusion-cpp      Build camera-lidar-fusion C++ library only"
-	@echo "  build-camera-lidar-fusion-ros2     Build camera-lidar-fusion ROS2 wrapper only"
+	@echo "  build-pcl-labeler          Build pcl-labeler (cpp + ros2)"
+	@echo "  build-pcl-labeler-cpp      Build pcl-labeler C++ library only"
+	@echo "  build-pcl-labeler-ros2     Build pcl-labeler ROS2 wrapper only"
 	@echo ""
 	@echo "  build-occupancy-grid-builder       Build occupancy-grid-builder (cpp + ros2)"
 	@echo "  build-occupancy-grid-builder-cpp   Build occupancy-grid-builder C++ library only"
@@ -56,9 +56,9 @@ help:
 	@echo "  build-all                          Build everything (cpp + ros2)"
 	@echo ""
 	@echo "Clean Targets:"
-	@echo "  clean-camera-lidar-fusion          Clean camera-lidar-fusion build artifacts"
-	@echo "  clean-camera-lidar-fusion-cpp      Clean camera-lidar-fusion C++ library"
-	@echo "  clean-camera-lidar-fusion-ros2     Clean camera-lidar-fusion ROS2 build"
+	@echo "  clean-pcl-labeler          Clean pcl-labeler build artifacts"
+	@echo "  clean-pcl-labeler-cpp      Clean pcl-labeler C++ library"
+	@echo "  clean-pcl-labeler-ros2     Clean pcl-labeler ROS2 build"
 	@echo ""
 	@echo "  clean-occupancy-grid-builder       Clean occupancy-grid-builder build artifacts"
 	@echo "  clean-occupancy-grid-builder-cpp   Clean occupancy-grid-builder C++ library"
@@ -94,14 +94,14 @@ build-image-processing-ros2:
 			--parallel-workers $(JOBS) \
 			--packages-select image_processing \
 			--event-handlers console_cohesion+"
-	@echo "✓ image-processing ROS2 package built successfully"
+	@echo " image-processing ROS2 package built successfully"
 	@echo ""
 
 
-build-camera-lidar-fusion-cpp:
+build-pcl-labeler-cpp:
 	@echo ""
 	@echo "╔════════════════════════════════════════════════════════════════════════════╗"
-	@echo "║  Building camera-lidar-fusion C++ library                                  ║"
+	@echo "║  Building pcl-labeler C++ library                                  ║"
 	@echo "╚════════════════════════════════════════════════════════════════════════════╝"
 	@mkdir -p $(CAMERA_LIDAR_FUSION_CPP)
 	@cd $(CAMERA_LIDAR_FUSION_CPP) && \
@@ -110,39 +110,39 @@ build-camera-lidar-fusion-cpp:
 			-DCMAKE_INSTALL_PREFIX=$(CAMERA_LIDAR_FUSION_CPP)/install && \
 		make -j$(JOBS) && \
 		make install
-	@echo "✓ camera-lidar-fusion C++ library built successfully"
+	@echo " pcl-labeler C++ library built successfully"
 	@echo ""
 
-build-camera-lidar-fusion-ros2: build-camera-lidar-fusion-cpp
+build-pcl-labeler-ros2: build-pcl-labeler-cpp
 	@echo ""
 	@echo "╔════════════════════════════════════════════════════════════════════════════╗"
-	@echo "║  Building camera-lidar-fusion ROS2 wrapper                                 ║"
+	@echo "║  Building pcl-labeler ROS2 wrapper                                 ║"
 	@echo "╚════════════════════════════════════════════════════════════════════════════╝"
 	@bash -c "source $(ROS_SETUP) && \
 		cd $(WS_ROOT) && \
 		colcon build \
 			--symlink-install \
 			--parallel-workers $(JOBS) \
-			--packages-select camera_lidar_fusion \
+			--packages-select pcl_labeler \
 			--cmake-args -DCAMERA_LIDAR_FUSION_CPP=$(CAMERA_LIDAR_FUSION_CPP) \
 			--event-handlers console_cohesion+"
-	@echo "✓ camera-lidar-fusion ROS2 wrapper built successfully"
+	@echo " pcl-labeler ROS2 wrapper built successfully"
 	@echo ""
 
-build-camera-lidar-fusion: build-camera-lidar-fusion-ros2
+build-pcl-labeler: build-pcl-labeler-ros2
 
-clean-camera-lidar-fusion-cpp:
-	@echo "==> Cleaning camera-lidar-fusion C++ library..."
+clean-pcl-labeler-cpp:
+	@echo "==> Cleaning pcl-labeler C++ library..."
 	@rm -rf $(CAMERA_LIDAR_FUSION_CPP)
-	@echo "✓ Done"
+	@echo " Done"
 
-clean-camera-lidar-fusion-ros2:
-	@echo "==> Cleaning camera-lidar-fusion ROS2 build..."
-	@rm -rf $(WS_ROOT)/build/camera_lidar_fusion
-	@rm -rf $(WS_ROOT)/install/camera_lidar_fusion
-	@echo "✓ Done"
+clean-pcl-labeler-ros2:
+	@echo "==> Cleaning pcl-labeler ROS2 build..."
+	@rm -rf $(WS_ROOT)/build/pcl_labeler
+	@rm -rf $(WS_ROOT)/install/pcl_labeler
+	@echo " Done"
 
-clean-camera-lidar-fusion: clean-camera-lidar-fusion-cpp clean-camera-lidar-fusion-ros2
+clean-pcl-labeler: clean-pcl-labeler-cpp clean-pcl-labeler-ros2
 
 # ============================================================================
 # Occupancy Grid Builder
@@ -160,7 +160,7 @@ build-occupancy-grid-builder-cpp:
 			-DCMAKE_INSTALL_PREFIX=$(OCCUPANCY_GRID_BUILDER_CPP)/install && \
 		make -j$(JOBS) && \
 		make install
-	@echo "✓ occupancy-grid-builder C++ library built successfully"
+	@echo " occupancy-grid-builder C++ library built successfully"
 	@echo ""
 
 build-occupancy-grid-builder-ros2: build-occupancy-grid-builder-cpp
@@ -176,7 +176,7 @@ build-occupancy-grid-builder-ros2: build-occupancy-grid-builder-cpp
 			--packages-select occupancy_grid_builder \
 			--cmake-args -DOCCUPANCY_GRID_BUILDER_CPP=$(OCCUPANCY_GRID_BUILDER_CPP) \
 			--event-handlers console_cohesion+"
-	@echo "✓ occupancy-grid-builder ROS2 wrapper built successfully"
+	@echo " occupancy-grid-builder ROS2 wrapper built successfully"
 	@echo ""
 
 build-occupancy-grid-builder: build-occupancy-grid-builder-ros2
@@ -184,13 +184,13 @@ build-occupancy-grid-builder: build-occupancy-grid-builder-ros2
 clean-occupancy-grid-builder-cpp:
 	@echo "==> Cleaning occupancy-grid-builder C++ library..."
 	@rm -rf $(OCCUPANCY_GRID_BUILDER_CPP)
-	@echo "✓ Done"
+	@echo " Done"
 
 clean-occupancy-grid-builder-ros2:
 	@echo "==> Cleaning occupancy-grid-builder ROS2 build..."
 	@rm -rf $(WS_ROOT)/build/occupancy_grid_builder
 	@rm -rf $(WS_ROOT)/install/occupancy_grid_builder
-	@echo "✓ Done"
+	@echo " Done"
 
 clean-occupancy-grid-builder: clean-occupancy-grid-builder-cpp clean-occupancy-grid-builder-ros2
 
@@ -204,7 +204,7 @@ build-yolo-onnx-ros-cpp:
 	@echo "║  Building yolo-onnx-ros C++ library                                        ║"
 	@echo "╚════════════════════════════════════════════════════════════════════════════╝"
 	@$(MAKE) -C $(YOLO_ONNX_ROS_SRC) build-cpp JOBS=$(JOBS)
-	@echo "✓ yolo-onnx-ros C++ library built successfully"
+	@echo " yolo-onnx-ros C++ library built successfully"
 	@echo ""
 
 build-yolo-onnx-ros-ros2: build-yolo-onnx-ros-cpp
@@ -220,7 +220,7 @@ build-yolo-onnx-ros-ros2: build-yolo-onnx-ros-cpp
 			--packages-select yolo_onnx_ros \
 			--cmake-args -DYOLO_CPP_PREFIX=$(YOLO_ONNX_CPP) \
 			--event-handlers console_cohesion+"
-	@echo "✓ yolo-onnx-ros ROS2 wrapper built successfully"
+	@echo " yolo-onnx-ros ROS2 wrapper built successfully"
 	@echo ""
 
 build-yolo-onnx-ros: build-yolo-onnx-ros-ros2
@@ -228,13 +228,13 @@ build-yolo-onnx-ros: build-yolo-onnx-ros-ros2
 clean-yolo-onnx-ros-cpp:
 	@echo "==> Cleaning yolo-onnx-ros C++ library..."
 	@rm -rf $(YOLO_ONNX_CPP)
-	@echo "✓ Done"
+	@echo " Done"
 
 clean-yolo-onnx-ros-ros2:
 	@echo "==> Cleaning yolo-onnx-ros ROS2 build..."
 	@rm -rf $(WS_ROOT)/build/yolo_onnx_ros
 	@rm -rf $(WS_ROOT)/install/yolo_onnx_ros
-	@echo "✓ Done"
+	@echo " Done"
 
 clean-yolo-onnx-ros: clean-yolo-onnx-ros-cpp clean-yolo-onnx-ros-ros2
 
@@ -242,7 +242,7 @@ clean-yolo-onnx-ros: clean-yolo-onnx-ros-cpp clean-yolo-onnx-ros-ros2
 # Aggregate Targets
 # ============================================================================
 
-build-all-cpp: build-camera-lidar-fusion-cpp build-occupancy-grid-builder-cpp build-yolo-onnx-ros-cpp
+build-all-cpp: build-pcl-labeler-cpp build-occupancy-grid-builder-cpp build-yolo-onnx-ros-cpp
 	@echo ""
 	@echo "╔════════════════════════════════════════════════════════════════════════════╗"
 	@echo "║  All C++ libraries built successfully                                      ║"
@@ -278,13 +278,13 @@ build-all: build-all-ros2
 	@echo ""
 	@bash -c "source $(WS_ROOT)/install/setup.bash"
 
-clean-all-cpp: clean-camera-lidar-fusion-cpp clean-occupancy-grid-builder-cpp clean-yolo-onnx-ros-cpp
-	@echo "✓ All C++ libraries cleaned"
+clean-all-cpp: clean-pcl-labeler-cpp clean-occupancy-grid-builder-cpp clean-yolo-onnx-ros-cpp
+	@echo " All C++ libraries cleaned"
 
 clean-all-ros2:
 	@echo "==> Cleaning all ROS2 build artifacts..."
 	@rm -rf $(WS_ROOT)/build $(WS_ROOT)/install $(WS_ROOT)/log
-	@echo "✓ All ROS2 builds cleaned"
+	@echo " All ROS2 builds cleaned"
 
 clean-all: clean-all-cpp clean-all-ros2
 	@echo ""
@@ -303,7 +303,7 @@ install-rosdeps:
 		sudo apt update && \
 		rosdep update && \
 		rosdep install --from-paths src --ignore-src -r -y"
-	@echo "✓ ROS2 dependencies installed"
+	@echo " ROS2 dependencies installed"
 	@echo ""
 
 clone-gitmodules:
@@ -313,5 +313,5 @@ clone-gitmodules:
 	@echo "╚════════════════════════════════════════════════════════════════════════════╝"
 	@bash -c "cd $(WS_ROOT) && \
 		git submodule update --init --recursive"
-	@echo "✓ Git submodules cloned"
+	@echo " Git submodules cloned"
 	@echo ""

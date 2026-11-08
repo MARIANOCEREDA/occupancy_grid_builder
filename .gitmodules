@@ -4,3 +4,6 @@
 [submodule "src/yolo_onnx_ros"]
 	path = src/yolo_onnx_ros
 	url = git@github.com:MARIANOCEREDA/yolo_onnx_ros.git
+[submodule "src/kiss_icp"]
+	path = src/kiss_icp
+	url = https://github.com/PRBonn/kiss-icp.git

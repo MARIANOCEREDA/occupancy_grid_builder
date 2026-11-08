@@ -15,14 +15,14 @@
 #include "tf2_ros/buffer.h"
 #include "tf2_ros/transform_listener.h"
 
-namespace camera_lidar_fusion
+namespace pcl_labeler
 {
 using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
 
-class CameraLidarFusionNode : public rclcpp_lifecycle::LifecycleNode
+class PCLLabelerNode : public rclcpp_lifecycle::LifecycleNode
 {
  public:
-  explicit CameraLidarFusionNode(const rclcpp::NodeOptions& options);
+  explicit PCLLabelerNode(const rclcpp::NodeOptions& options);
 
  private:
   CallbackReturn on_configure(const rclcpp_lifecycle::State& state) override;
@@ -63,4 +63,4 @@ class CameraLidarFusionNode : public rclcpp_lifecycle::LifecycleNode
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcl_cloud_;
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr labeled_cloud_;
 };
-}  // namespace camera_lidar_fusion
+}  // namespace pcl_labeler

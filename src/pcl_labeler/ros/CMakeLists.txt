@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(camera_lidar_fusion)
+project(pcl_labeler)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -39,24 +39,8 @@ add_definitions(${PCL_DEFINITIONS})
 set(COMPONENT_NAME ${PROJECT_NAME}_component)
 set(NODE_NAME ${PROJECT_NAME}_node)
 
-set(SOURCES src/camera_lidar_fusion_node.cpp)
-set(HEADERS include/camera_lidar_fusion/camera_lidar_fusion_node.hpp)
-
-add_executable(${NODE_NAME} ${SOURCES} ${HEADERS})
-ament_target_dependencies(
-  ${NODE_NAME}
-  rclcpp
-  rclcpp_components
-  rclcpp_lifecycle
-  OpenCV
-  cv_bridge
-  sensor_msgs
-  tf2
-  tf2_ros
-  tf2_eigen
-  pcl_conversions
-)
-target_link_libraries(${NODE_NAME} mask_lidar_fusion ${PCL_LIBRARIES})
+set(SOURCES src/pcl_labeler_node.cpp)
+set(HEADERS include/pcl_labeler/pcl_labeler_node.hpp)
 
 add_library(${COMPONENT_NAME} SHARED ${SOURCES} ${HEADERS})
 ament_target_dependencies(
@@ -73,12 +57,8 @@ ament_target_dependencies(
   pcl_conversions
 )
 target_link_libraries(${COMPONENT_NAME} mask_lidar_fusion ${PCL_LIBRARIES})
-rclcpp_components_register_nodes(${COMPONENT_NAME} "camera_lidar_fusion::CameraLidarFusionNode")
+rclcpp_components_register_node(${COMPONENT_NAME} PLUGIN "pcl_labeler::PCLLabelerNode" EXECUTABLE ${NODE_NAME})
 
-target_include_directories(${NODE_NAME} PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
-)
 target_include_directories(${COMPONENT_NAME} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
@@ -87,11 +67,11 @@ target_include_directories(${COMPONENT_NAME} PUBLIC
 install(
   TARGETS ${COMPONENT_NAME}
   LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin
 )
 
-install(
-  TARGETS ${NODE_NAME}
-  DESTINATION lib/${PROJECT_NAME}
-)
+ament_export_include_directories(include)
+ament_export_targets(${COMPONENT_NAME})
 
 ament_package()

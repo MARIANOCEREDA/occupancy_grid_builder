@@ -1,4 +1,4 @@
-#include "camera_lidar_fusion/camera_lidar_fusion_node.hpp"
+#include "pcl_labeler/pcl_labeler_node.hpp"
 
 #include <cv_bridge/cv_bridge.hpp>
 #include <pcl_conversions/pcl_conversions.h>
@@ -6,11 +6,11 @@
 
 #include "mask_lidar_fusion/mask_lidar_fusion.hpp"
 
-namespace camera_lidar_fusion
+namespace pcl_labeler
 {
 
-CameraLidarFusionNode::CameraLidarFusionNode(const rclcpp::NodeOptions& options)
-  : rclcpp_lifecycle::LifecycleNode("camera_lidar_fusion_node", options)
+PCLLabelerNode::PCLLabelerNode(const rclcpp::NodeOptions& options)
+  : rclcpp_lifecycle::LifecycleNode("pcl_labeler_node", options)
 {
   RCLCPP_INFO(get_logger(), "Camera-LiDAR Fusion Node has been created.");
 
@@ -20,7 +20,7 @@ CameraLidarFusionNode::CameraLidarFusionNode(const rclcpp::NodeOptions& options)
   labeled_cloud_ = std::make_shared<pcl::PointCloud<pcl::PointXYZRGB>>();
 }
 
-CallbackReturn CameraLidarFusionNode::on_configure(const rclcpp_lifecycle::State&)
+CallbackReturn PCLLabelerNode::on_configure(const rclcpp_lifecycle::State&)
 {
   RCLCPP_INFO(get_logger(), "Configuring Camera-LiDAR Fusion Node...");
 
@@ -52,23 +52,23 @@ CallbackReturn CameraLidarFusionNode::on_configure(const rclcpp_lifecycle::State
   camera_info_sub_ = this->create_subscription<sensor_msgs::msg::CameraInfo>(
       camera_info_topic,
       10,
-      std::bind(&CameraLidarFusionNode::camera_info_callback, this, std::placeholders::_1),
+      std::bind(&PCLLabelerNode::camera_info_callback, this, std::placeholders::_1),
       camera_sub_options);
   segmentation_mask_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
       segmentation_mask_topic,
       10,
-      std::bind(&CameraLidarFusionNode::segmentation_mask_callback, this, std::placeholders::_1),
+      std::bind(&PCLLabelerNode::segmentation_mask_callback, this, std::placeholders::_1),
       camera_sub_options);
   lidar_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
       point_cloud_topic,
       10,
-      std::bind(&CameraLidarFusionNode::lidar_callback, this, std::placeholders::_1));
+      std::bind(&PCLLabelerNode::lidar_callback, this, std::placeholders::_1));
 
   RCLCPP_INFO(get_logger(), "Camera-LiDAR Fusion Node configured.");
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn CameraLidarFusionNode::on_activate(const rclcpp_lifecycle::State&)
+CallbackReturn PCLLabelerNode::on_activate(const rclcpp_lifecycle::State&)
 {
   RCLCPP_INFO(get_logger(), "Activating Camera-LiDAR Fusion Node...");
   labeled_pcl_pub_->on_activate();
@@ -76,7 +76,7 @@ CallbackReturn CameraLidarFusionNode::on_activate(const rclcpp_lifecycle::State&
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn CameraLidarFusionNode::on_deactivate(const rclcpp_lifecycle::State&)
+CallbackReturn PCLLabelerNode::on_deactivate(const rclcpp_lifecycle::State&)
 {
   RCLCPP_INFO(get_logger(), "Deactivating Camera-LiDAR Fusion Node...");
   labeled_pcl_pub_->on_deactivate();
@@ -84,7 +84,7 @@ CallbackReturn CameraLidarFusionNode::on_deactivate(const rclcpp_lifecycle::Stat
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn CameraLidarFusionNode::on_cleanup(const rclcpp_lifecycle::State&)
+CallbackReturn PCLLabelerNode::on_cleanup(const rclcpp_lifecycle::State&)
 {
   RCLCPP_INFO(get_logger(), "Cleaning up Camera-LiDAR Fusion Node...");
   labeled_pcl_pub_.reset();
@@ -95,13 +95,13 @@ CallbackReturn CameraLidarFusionNode::on_cleanup(const rclcpp_lifecycle::State&)
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn CameraLidarFusionNode::on_shutdown(const rclcpp_lifecycle::State&)
+CallbackReturn PCLLabelerNode::on_shutdown(const rclcpp_lifecycle::State&)
 {
   RCLCPP_INFO(get_logger(), "Shutting down Camera-LiDAR Fusion Node...");
   return CallbackReturn::SUCCESS;
 }
 
-void CameraLidarFusionNode::segmentation_mask_callback(const sensor_msgs::msg::Image::SharedPtr msg)
+void PCLLabelerNode::segmentation_mask_callback(const sensor_msgs::msg::Image::SharedPtr msg)
 {
   {
     std::lock_guard<std::mutex> lock(data_mutex_);
@@ -110,7 +110,7 @@ void CameraLidarFusionNode::segmentation_mask_callback(const sensor_msgs::msg::I
   }
 }
 
-void CameraLidarFusionNode::camera_info_callback(const sensor_msgs::msg::CameraInfo::SharedPtr msg)
+void PCLLabelerNode::camera_info_callback(const sensor_msgs::msg::CameraInfo::SharedPtr msg)
 {
   camera_intrinsics_ = cv::Mat(3, 3, CV_64F);
   for (int i = 0; i < 3; ++i)
@@ -125,7 +125,7 @@ void CameraLidarFusionNode::camera_info_callback(const sensor_msgs::msg::CameraI
   RCLCPP_INFO(get_logger(), "Received camera info.");
 }
 
-void CameraLidarFusionNode::lidar_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
+void PCLLabelerNode::lidar_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 {
   {
     std::lock_guard<std::mutex> lock(data_mutex_);
@@ -137,7 +137,7 @@ void CameraLidarFusionNode::lidar_callback(const sensor_msgs::msg::PointCloud2::
   label_point_cloud();
 }
 
-void CameraLidarFusionNode::label_point_cloud()
+void PCLLabelerNode::label_point_cloud()
 {
   sensor_msgs::msg::PointCloud2 input_cloud;
   sensor_msgs::msg::Image segmentation_mask;
@@ -227,13 +227,13 @@ void CameraLidarFusionNode::label_point_cloud()
     RCLCPP_ERROR(get_logger(), "Error in label_point_cloud: %s", ex.what());
   }
 }
-}  // namespace camera_lidar_fusion
+}  // namespace pcl_labeler
 
 int main(int argc, char* argv[])
 {
   rclcpp::init(argc, argv);
   rclcpp::executors::SingleThreadedExecutor executor;
-  auto node = std::make_shared<camera_lidar_fusion::CameraLidarFusionNode>(rclcpp::NodeOptions());
+  auto node = std::make_shared<pcl_labeler::PCLLabelerNode>(rclcpp::NodeOptions());
   executor.add_node(node->get_node_base_interface());
   executor.spin();
   rclcpp::shutdown();
@@ -241,4 +241,4 @@ int main(int argc, char* argv[])
 };
 
 #include <rclcpp_components/register_node_macro.hpp>
-RCLCPP_COMPONENTS_REGISTER_NODE(camera_lidar_fusion::CameraLidarFusionNode)
+RCLCPP_COMPONENTS_REGISTER_NODE(pcl_labeler::PCLLabelerNode)

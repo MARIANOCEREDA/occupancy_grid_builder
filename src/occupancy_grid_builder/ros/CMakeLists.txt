@@ -107,4 +107,7 @@ install(
   DESTINATION lib/${PROJECT_NAME}
 )
 
+ament_export_include_directories(include)
+ament_export_targets(${COMPONENT_NAME})
+
 ament_package()

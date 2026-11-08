@@ -1,18 +1,11 @@
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, EmitEvent, IncludeLaunchDescription, RegisterEventHandler, TimerAction
-from launch.events import matches_action
-from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import LifecycleNode, Node
-from launch_ros.event_handlers import OnStateTransition
-from launch_ros.events.lifecycle import ChangeState
-from launch_ros.substitutions import FindPackageShare
-from launch.substitutions import PathJoinSubstitution
 from launch.conditions import IfCondition
 from launch_ros.descriptions import ComposableNode
 from launch_ros.actions import ComposableNodeContainer
 from ament_index_python.packages import get_package_share_directory
-from lifecycle_msgs.msg import Transition
 import os
 
 import xacro
@@ -122,10 +115,10 @@ def generate_launch_description():
     )
 
     # --- Camera-LiDAR Fusion Composable Node ---
-    camera_lidar_fusion_component = ComposableNode(
-        package='camera_lidar_fusion',
-        plugin='camera_lidar_fusion::CameraLidarFusionNode',
-        name='camera_lidar_fusion_node',
+    pcl_labeler_component = ComposableNode(
+        package='pcl_labeler',
+        plugin='pcl_labeler::PCLLabelerNode',
+        name='pcl_labeler_node',
         parameters=[{
             'use_sim_time': LaunchConfiguration('use_sim_time'),
         }],
@@ -192,7 +185,7 @@ def generate_launch_description():
             kiss_icp_component,
             image_undistort_component,
             segmentation_inference_onnx_component,
-            camera_lidar_fusion_component,
+            pcl_labeler_component,
             occupancy_grid_builder_component
         ],
         output='screen',
@@ -202,7 +195,7 @@ def generate_launch_description():
     lifecycle_node_names = [
         'image_undistort_node',
         'yolo_onnx_segmentor_node',
-        'camera_lidar_fusion_node',
+        'pcl_labeler_node',
         'occupancy_grid_builder_node',
     ]
     lifecycle_manager_backbone = Node(
