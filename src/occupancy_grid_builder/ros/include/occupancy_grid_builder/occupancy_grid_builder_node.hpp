@@ -65,6 +65,7 @@ class OccupancyGridBuilderNode : public rclcpp_lifecycle::LifecycleNode
   int height_;
   double origin_x_;
   double origin_y_;
+  bool display_latency_;
 
   std::jthread processing_thread_;
   

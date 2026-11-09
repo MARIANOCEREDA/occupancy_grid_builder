@@ -3,7 +3,10 @@ from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import LifecycleNode, Node
 from launch.conditions import IfCondition
+from launch.substitutions import NotEqualsSubstitution
+from launch_ros.actions import LoadComposableNodes
 from launch_ros.descriptions import ComposableNode
+from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.actions import ComposableNodeContainer
 from ament_index_python.packages import get_package_share_directory
 import os
@@ -44,6 +47,16 @@ def generate_launch_description():
         'lidar_odom_frame',
         default_value='odom',
         description='Odometry output frame'
+    )
+    bag_path_arg = DeclareLaunchArgument(
+        'bag_path',
+        default_value='',
+        description='Rosbag to play inside the perception container (empty = no playback)'
+    )
+    bag_start_paused_arg = DeclareLaunchArgument(
+        'bag_start_paused',
+        default_value='false',
+        description='Start the bag paused; resume with the /rosbag2_player/resume service'
     )
 
     # --- Robot description ---
@@ -192,6 +205,26 @@ def generate_launch_description():
         output='screen',
     )
 
+    # --- Rosbag player (publishes /clock, so it must not use sim time itself) ---
+    bag_player_component = ComposableNode(
+        package='rosbag2_transport',
+        plugin='rosbag2_transport::Player',
+        name='rosbag2_player',
+        parameters=[{
+            'storage.uri': ParameterValue(LaunchConfiguration('bag_path'), value_type=str),
+            'play.clock_publish_frequency': 100.0,
+            'play.start_paused': ParameterValue(
+                LaunchConfiguration('bag_start_paused'), value_type=bool),
+            'play.disable_keyboard_controls': True,
+        }],
+    )
+
+    load_bag_player = LoadComposableNodes(
+        target_container='/perception_container',
+        composable_node_descriptions=[bag_player_component],
+        condition=IfCondition(NotEqualsSubstitution(LaunchConfiguration('bag_path'), '')),
+    )
+
     # --- Lifecycle manager for all perception nodes in the container ---
     lifecycle_node_names = [
         'image_undistort_node',
@@ -218,10 +251,13 @@ def generate_launch_description():
         use_sim_time_arg,
         base_frame_arg,
         lidar_odom_frame_arg,
+        bag_path_arg,
+        bag_start_paused_arg,
         robot_state_publisher_node,
         rviz_node,
         map_to_odom_publish_transform,
         ekf_node,
         perception_container,
+        load_bag_player,
         lifecycle_manager_backbone,
     ])

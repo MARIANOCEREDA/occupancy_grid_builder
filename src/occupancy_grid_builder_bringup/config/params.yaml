@@ -23,6 +23,7 @@ ground_segmentation_node:
 image_undistort_node:
   ros__parameters:
     resize_output: false
+    display_latency: true
 
 # YOLO ONNX segmentor
 yolo_onnx_segmentor_node:

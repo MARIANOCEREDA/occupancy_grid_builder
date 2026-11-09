@@ -28,6 +28,7 @@ CallbackReturn OccupancyGridBuilderNode::on_configure(const rclcpp_lifecycle::St
   this->declare_parameter<int>("height", 1000);
   this->declare_parameter<double>("origin_x", -50.0);
   this->declare_parameter<double>("origin_y", -50.0);
+  this->declare_parameter<bool>("display_latency", false);
 
   this->get_parameter("pointcloud_topic", pointcloud_topic_);
   this->get_parameter("grid_topic", grid_topic_);
@@ -38,6 +39,7 @@ CallbackReturn OccupancyGridBuilderNode::on_configure(const rclcpp_lifecycle::St
   this->get_parameter("height", height_);
   this->get_parameter("origin_x", origin_x_);
   this->get_parameter("origin_y", origin_y_);
+  this->get_parameter("display_latency", display_latency_);
 
   return CallbackReturn::SUCCESS;
 }
@@ -219,9 +221,12 @@ void OccupancyGridBuilderNode::gridBuilderThread(std::stop_token stop_token)
 
     grid_pub_->publish(grid_msg);
 
-    const double cloud_latency =
-        (this->now() - rclcpp::Time(msg->header.stamp, RCL_ROS_TIME)).seconds();
-    RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 2000, "Pipeline latency: %.3f s", cloud_latency);
+    if (display_latency_)
+    {
+      const double cloud_latency =
+          (this->now() - rclcpp::Time(msg->header.stamp, RCL_ROS_TIME)).seconds();
+      RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 2000, "Pipeline latency: %.3f s", cloud_latency);
+    }
   }
 }
 

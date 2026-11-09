@@ -15,11 +15,13 @@ CallbackReturn ImageUndistort::on_configure(const rclcpp_lifecycle::State&)
   this->declare_parameter("camera_info_topic", "camera_info");
   this->declare_parameter("output_image_topic", "image_rect");
   this->declare_parameter("resize_output", false);
+  this->declare_parameter("display_latency", false);
 
   image_topic_ = this->get_parameter("input_image_topic").as_string();
   camera_info_topic_ = this->get_parameter("camera_info_topic").as_string();
   output_image_topic_ = this->get_parameter("output_image_topic").as_string();
   resize_output_ = this->get_parameter("resize_output").as_bool();
+  display_latency_ = this->get_parameter("display_latency").as_bool();
 
   RCLCPP_INFO(get_logger(), "Configured %s node", kNodeName);
 
@@ -78,8 +80,9 @@ void ImageUndistort::image_callback(const sensor_msgs::msg::Image::SharedPtr ima
     return;
   }
 
-  cv_bridge::CvImageConstPtr cv_ptr = cv_bridge::toCvShare(image_msg, image_msg->encoding);
+  auto image_ts = rclcpp::Time(image_msg->header.stamp);
 
+  cv_bridge::CvImageConstPtr cv_ptr = cv_bridge::toCvShare(image_msg, image_msg->encoding);
   if (distortion_model_ == DistortionModels::FISHEYE)
   {
     cv::fisheye::undistortImage(cv_ptr->image,
@@ -104,10 +107,27 @@ void ImageUndistort::image_callback(const sensor_msgs::msg::Image::SharedPtr ima
     cv::resize(undistorted_image_, undistorted_image_, cv::Size(), 0.5, 0.5);
   }
 
-  sensor_msgs::msg::Image::SharedPtr undistorted_image_msg =
-      cv_bridge::CvImage(image_msg->header, image_msg->encoding, undistorted_image_).toImageMsg();
+  auto undistorted_image_msg = std::make_unique<sensor_msgs::msg::Image>();
+
+  undistorted_image_msg->header = image_msg->header;
+  undistorted_image_msg->height = undistorted_image_.rows;
+  undistorted_image_msg->width = undistorted_image_.cols;
+  undistorted_image_msg->encoding = image_msg->encoding;
+  undistorted_image_msg->is_bigendian = 0;
+  undistorted_image_msg->step = undistorted_image_.cols * undistorted_image_.elemSize();
+
+  undistorted_image_msg->data.resize(undistorted_image_.total() * undistorted_image_.elemSize());
+  undistorted_image_msg->data.assign(undistorted_image_.datastart, undistorted_image_.dataend);
       
-  undistorted_image_pub_->publish(*undistorted_image_msg);
+  undistorted_image_pub_->publish(std::move(undistorted_image_msg));
+
+  auto end_ts = rclcpp::Time(this->now());
+  auto latency = (end_ts - image_ts).nanoseconds() / 1000000;
+
+  if (display_latency_)
+  {
+    RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 2000, "Image undistortion latency: %ld ms", latency);
+  }
 }
 
 void ImageUndistort::camera_info_callback(
@@ -131,6 +151,7 @@ void ImageUndistort::camera_info_callback(
   }
 
   camera_info_received_ = true;
+  camera_info_sub_.reset();
 }
 
 }  // namespace image_undistort

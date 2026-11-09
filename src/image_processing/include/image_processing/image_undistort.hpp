@@ -45,6 +45,7 @@ namespace image_undistort
         cv::Mat camera_matrix_;
         cv::Mat dist_coeffs_;
         cv::Mat input_distorded_image_;
+        bool display_latency_ = false;
         cv::Mat undistorted_image_;
 
         DistortionModels distortion_model_ = DistortionModels::FISHEYE;
