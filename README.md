@@ -106,6 +106,12 @@ make clean-all
 
 ## TODO
 
-- Add a cluster-size limit for PCL clusters.
-- Add filtering techniques to reduce the number of points.
-- Remove cluster outliers.
+Improve 3D segmentation and point-cloud processing:
+- [x] Remove ground from PCL to improve 3D segmentation. 
+- [x] Erode Mask to avoid edge artifacts.
+- [ ] Add a cluster-size limit for PCL clusters.
+- [ ] Remove cluster outliers.
+
+Reduce end-to-end latency in the perception pipeline.
+- [x] Measure the latency of the full pipeline (Average: 427 ms). From ROS message timestamp to occupancy grid publication.
+- [ ] Measure the latency of individual components in the pipeline.
