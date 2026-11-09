@@ -218,6 +218,10 @@ void OccupancyGridBuilderNode::gridBuilderThread(std::stop_token stop_token)
     auto end_time = std::chrono::high_resolution_clock::now();
 
     grid_pub_->publish(grid_msg);
+
+    const double cloud_latency =
+        (this->now() - rclcpp::Time(msg->header.stamp, RCL_ROS_TIME)).seconds();
+    RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 2000, "Pipeline latency: %.3f s", cloud_latency);
   }
 }
 

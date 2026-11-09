@@ -13,6 +13,12 @@ import xacro
 
 def generate_launch_description():
 
+    params_file = os.path.join(
+        get_package_share_directory('occupancy_grid_builder_bringup'),
+        'config',
+        'params.yaml'
+    )
+
     # --- Arguments ---
     topic_arg = DeclareLaunchArgument(
         'topic',
@@ -63,13 +69,10 @@ def generate_launch_description():
         remappings=[
             ('pointcloud_topic', LaunchConfiguration('topic')),
         ],
-        parameters=[{
+        parameters=[params_file, {
             'base_frame': LaunchConfiguration('base_frame'),
             'lidar_odom_frame': LaunchConfiguration('lidar_odom_frame'),
-            'publish_odom_tf': True,
-            'invert_odom_tf': False,
             'use_sim_time': LaunchConfiguration('use_sim_time'),
-            'visualize': False
         }],
     )
 
@@ -87,68 +90,56 @@ def generate_launch_description():
         condition=IfCondition(LaunchConfiguration('visualize'))
     )
 
-    # --- Ground Segmentation Composable Node ---
-    ground_segmentation_config = os.path.join(
-        get_package_share_directory('occupancy_grid_builder_bringup'),
-        'config',
-        'ground_segmentation_node.yaml'
-    )
+    # --- Ground Segmentation Component ---
     ground_segmentation_component = ComposableNode(
         package='ground_segmentation',
         plugin='ground_segmentation::GroundSegmentationNode',
         name='ground_segmentation_node',
-        parameters=[ground_segmentation_config],
+        parameters=[params_file],
     )
 
-    # --- Image undistort Composable Node ---
+    # --- Image undistort Component ---
     image_undistort_component = ComposableNode(
         package='image_processing',
         plugin='image_undistort::ImageUndistort',
         name='image_undistort_node',
-        parameters=[{
+        parameters=[params_file, {
             'use_sim_time': LaunchConfiguration('use_sim_time'),
-            'resize_output': False
         }],
     )
 
-    # --- Segmentation Inference ONNX Composable Node ---
+    # --- Segmentation Inference ONNX Component ---
     segmentation_inference_onnx_component = ComposableNode(
         package='yolo_onnx_ros',
         plugin='yolo_onnx_ros::YoloSegmentorNode',
         name='yolo_onnx_segmentor_node',
-        parameters=[{
+        parameters=[params_file, {
             'use_sim_time': LaunchConfiguration('use_sim_time'),
             'model_path': os.path.join(
                 get_package_share_directory('occupancy_grid_builder_bringup'),
                 'models',
                 'yolov11n-seg.onnx'
             ),
-            'device_type': 'CPU',
         }],
     )
 
-    # --- PCL Labeler Composable Node ---
+    # --- PCL Labeler Component ---
     pcl_labeler_component = ComposableNode(
         package='pcl_labeler',
         plugin='pcl_labeler::PCLLabelerNode',
         name='pcl_labeler_node',
-        parameters=[{
+        parameters=[params_file, {
             'use_sim_time': LaunchConfiguration('use_sim_time'),
-            'point_cloud_topic': "/segmented_points_non_ground"
         }],
     )
 
-    # --- Occupancy Grid Builder Composable Node ---
+    # --- Occupancy Grid Builder Component ---
     occupancy_grid_builder_component = ComposableNode(
         package='occupancy_grid_builder',
         plugin='occupancy_grid_builder::OccupancyGridBuilderNode',
         name='occupancy_grid_builder_node',
         parameters=[
-            os.path.join(
-                get_package_share_directory('occupancy_grid_builder_bringup'), 
-                'config', 
-                'occupancy_grid_builder.yaml'
-            ),
+            params_file,
             {'use_sim_time': LaunchConfiguration('use_sim_time')}
         ],
     )
@@ -159,7 +150,7 @@ def generate_launch_description():
         executable='ekf_node',
         name='ekf_filter_node',
         output='screen',
-        parameters=[os.path.join(get_package_share_directory('occupancy_grid_builder_bringup'), 'config', 'ekf.yaml'),
+        parameters=[params_file,
                     {'use_sim_time': LaunchConfiguration('use_sim_time')}],
     )
 
@@ -176,18 +167,13 @@ def generate_launch_description():
     )
 
     # ----- Nav2 Local Costmap Node -----
-    local_costmap_params_file = os.path.join(
-        get_package_share_directory('occupancy_grid_builder_bringup'), 
-        'config', 
-        'local_costmap.yaml'
-    )
     local_costmap_node = LifecycleNode(
         package='nav2_costmap_2d',
         executable='nav2_costmap_2d',
         namespace='local_costmap',
         name='local_costmap',
         output='screen',
-        parameters=[local_costmap_params_file, {'use_sim_time': LaunchConfiguration('use_sim_time')}],
+        parameters=[params_file, {'use_sim_time': LaunchConfiguration('use_sim_time')}],
     )
 
     perception_container = ComposableNodeContainer(
