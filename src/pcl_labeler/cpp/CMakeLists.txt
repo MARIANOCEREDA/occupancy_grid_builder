@@ -11,7 +11,8 @@ add_definitions(${PCL_DEFINITIONS})
 
 set(HEADERS 
     include/pcl_labeler/pcl_labeler.hpp
-    include/mask_lidar_fusion/extrinsics_parser.hpp
+    include/pcl_labeler/extrinsics_parser.hpp
+    include/pcl_labeler/camera_intrinsics_manager.hpp
 )
 
 set(SOURCES 

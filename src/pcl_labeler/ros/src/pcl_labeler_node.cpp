@@ -42,7 +42,8 @@ CallbackReturn PCLLabelerNode::on_configure(const rclcpp_lifecycle::State&)
 
   // Create publishers
   labeled_pcl_pub_ =
-      this->create_publisher<sensor_msgs::msg::PointCloud2>(labeled_point_cloud_topic, 10);
+      this->create_publisher<sensor_msgs::msg::PointCloud2>(
+        labeled_point_cloud_topic, rclcpp::QoS(rclcpp::KeepLast(1)));
 
   rclcpp::SubscriptionOptions camera_sub_options;
   camera_sub_options.callback_group =
@@ -56,12 +57,12 @@ CallbackReturn PCLLabelerNode::on_configure(const rclcpp_lifecycle::State&)
       camera_sub_options);
   segmentation_mask_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
       segmentation_mask_topic,
-      10,
+      rclcpp::SensorDataQoS().keep_last(1),
       std::bind(&PCLLabelerNode::segmentation_mask_callback, this, std::placeholders::_1),
       camera_sub_options);
   lidar_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
       point_cloud_topic,
-      rclcpp::SensorDataQoS(),
+      rclcpp::SensorDataQoS().keep_last(1),
       std::bind(&PCLLabelerNode::lidar_callback, this, std::placeholders::_1));
 
   RCLCPP_INFO(get_logger(), "Camera-LiDAR Fusion Node configured.");
@@ -105,7 +106,7 @@ void PCLLabelerNode::segmentation_mask_callback(const sensor_msgs::msg::Image::S
 {
   {
     std::lock_guard<std::mutex> lock(data_mutex_);
-    latest_segmentation_mask_ = *msg;
+    latest_segmentation_mask_ = msg;
     segmentation_mask_received_ = true;
   }
 }
@@ -127,29 +128,22 @@ void PCLLabelerNode::camera_info_callback(const sensor_msgs::msg::CameraInfo::Sh
 
 void PCLLabelerNode::lidar_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 {
-  {
-    std::lock_guard<std::mutex> lock(data_mutex_);
-    latest_lidar_data_ = *msg;
-    lidar_data_received_ = true;
-  }
-
-  // Process the point cloud if all data is available
-  label_point_cloud();
+  // Process the point cloud directly to avoid retaining and copying large messages.
+  label_point_cloud(msg);
 }
 
-void PCLLabelerNode::label_point_cloud()
+void PCLLabelerNode::label_point_cloud(
+    const sensor_msgs::msg::PointCloud2::SharedPtr& input_cloud)
 {
-  sensor_msgs::msg::PointCloud2 input_cloud;
-  sensor_msgs::msg::Image segmentation_mask;
+  sensor_msgs::msg::Image::SharedPtr segmentation_mask;
   cv::Mat camera_intrinsics;
   {
     std::lock_guard<std::mutex> lock(data_mutex_);
-    if (!camera_info_received_ || !segmentation_mask_received_ || !lidar_data_received_)
+    if (!camera_info_received_ || !segmentation_mask_received_ || !latest_segmentation_mask_)
     {
       RCLCPP_DEBUG(get_logger(), "Not all data received yet. Skipping labeling.");
       return;
     }
-    input_cloud = latest_lidar_data_;
     segmentation_mask = latest_segmentation_mask_;
     camera_intrinsics = camera_intrinsics_.clone();
   }
@@ -165,7 +159,7 @@ void PCLLabelerNode::label_point_cloud()
     Eigen::Matrix4f extrinsics = transform_eigen.matrix().cast<float>();
 
     // 2. Convert segmentation mask to OpenCV
-    cv_bridge::CvImagePtr cv_mask = cv_bridge::toCvCopy(segmentation_mask);
+    cv_bridge::CvImagePtr cv_mask = cv_bridge::toCvCopy(*segmentation_mask);
     cv::Mat mask_single_channel = cv_mask->image;
 
     // Convert single-channel mask to 3-channel BGR image
@@ -182,10 +176,10 @@ void PCLLabelerNode::label_point_cloud()
 
     // 3. Convert ROS PointCloud2 to PCL
     pcl_cloud_->clear();
-    pcl::fromROSMsg(input_cloud, *pcl_cloud_);
+    pcl::fromROSMsg(*input_cloud, *pcl_cloud_);
 
     // 4. Setup the pcl labeler and call fuse()
-    mask_lidar_fusion::MaskLidarFusion fusion;
+    pcl_labeler::PCLLabeler fusion;
 
     // Convert camera intrinsics to Eigen
     Eigen::Matrix3f intrinsics_eigen;
@@ -197,11 +191,11 @@ void PCLLabelerNode::label_point_cloud()
       }
     }
 
-    fusion.SetExtrinsics(extrinsics);
-    fusion.SetIntrinsics(intrinsics_eigen);
+    fusion.set_extrinsics(extrinsics);
+    fusion.set_intrinsics(intrinsics_eigen);
 
     // Prepare image structure
-    mask_lidar_fusion::Image mask_image;
+    pcl_labeler::Image mask_image;
     mask_image.width = mask_bgr.cols;
     mask_image.height = mask_bgr.rows;
     mask_image.data.assign(mask_bgr.data, mask_bgr.data + mask_bgr.total() * mask_bgr.channels());
@@ -213,7 +207,7 @@ void PCLLabelerNode::label_point_cloud()
     // 5. Convert back to ROS PointCloud2
     sensor_msgs::msg::PointCloud2 output_msg;
     pcl::toROSMsg(*labeled_cloud_, output_msg);
-    output_msg.header = input_cloud.header;
+    output_msg.header = input_cloud->header;
 
     // 6. Publish labeled point cloud
     labeled_pcl_pub_->publish(output_msg);
@@ -228,17 +222,6 @@ void PCLLabelerNode::label_point_cloud()
   }
 }
 }  // namespace pcl_labeler
-
-int main(int argc, char* argv[])
-{
-  rclcpp::init(argc, argv);
-  rclcpp::executors::SingleThreadedExecutor executor;
-  auto node = std::make_shared<pcl_labeler::PCLLabelerNode>(rclcpp::NodeOptions());
-  executor.add_node(node->get_node_base_interface());
-  executor.spin();
-  rclcpp::shutdown();
-  return 0;
-};
 
 #include <rclcpp_components/register_node_macro.hpp>
 RCLCPP_COMPONENTS_REGISTER_NODE(pcl_labeler::PCLLabelerNode)

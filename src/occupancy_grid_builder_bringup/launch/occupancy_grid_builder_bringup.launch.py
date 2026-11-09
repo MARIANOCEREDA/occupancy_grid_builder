@@ -134,7 +134,7 @@ def generate_launch_description():
         name='pcl_labeler_node',
         parameters=[{
             'use_sim_time': LaunchConfiguration('use_sim_time'),
-            'point_cloud_topic': "/rslidar_points"
+            'point_cloud_topic': "/segmented_points_non_ground"
         }],
     )
 

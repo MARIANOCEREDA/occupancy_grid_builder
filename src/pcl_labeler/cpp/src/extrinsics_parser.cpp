@@ -1,15 +1,15 @@
 #include <fstream>
-#include <mask_lidar_fusion/extrinsics_parser.hpp>
+#include <pcl_labeler/extrinsics_parser.hpp>
 #include <stdexcept>
 
-namespace mask_lidar_fusion
+namespace pcl_labeler
 {
 ExtrinsicsParser::ExtrinsicsParser(const std::string& extrinsics_file_path)
 {
-  extrinsics_ = ParseExtrinsicsFile(extrinsics_file_path);
+  extrinsics_ = parse_extrinsics_file(extrinsics_file_path);
 }
 
-Eigen::Matrix4f ExtrinsicsParser::ParseExtrinsicsFile(const std::string& file_path)
+Eigen::Matrix4f ExtrinsicsParser::parse_extrinsics_file(const std::string& file_path)
 {
   std::ifstream file(file_path);
   if (!file.is_open())
@@ -45,23 +45,23 @@ Eigen::Matrix4f ExtrinsicsParser::ParseExtrinsicsFile(const std::string& file_pa
   return matrix;
 }
 
-Eigen::Matrix4f ExtrinsicsParser::GetMatrix() const
+Eigen::Matrix4f ExtrinsicsParser::get_matrix() const
 {
   return extrinsics_;
 }
 
-Eigen::Matrix4f ExtrinsicsParser::GetInverseMatrix() const
+Eigen::Matrix4f ExtrinsicsParser::get_inverse_matrix() const
 {
   return extrinsics_.inverse();
 }
 
-Eigen::Matrix3f ExtrinsicsParser::GetRotationMatrix() const
+Eigen::Matrix3f ExtrinsicsParser::get_rotation_matrix() const
 {
   return extrinsics_.block<3, 3>(0, 0);
 }
 
-Eigen::Vector3f ExtrinsicsParser::GetTranslationVector() const
+Eigen::Vector3f ExtrinsicsParser::get_translation_vector() const
 {
   return extrinsics_.block<3, 1>(0, 3);
 }
-}  // namespace mask_lidar_fusion
+}  // namespace pcl_labeler

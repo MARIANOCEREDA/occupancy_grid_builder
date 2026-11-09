@@ -2,9 +2,11 @@ ground_segmentation_node:
   ros__parameters:
     input_topic: /rslidar_points
     output_topic: /segmented_points
+    segmentation_frame: base_link
     segmenter:
       plugin: ground_segmentation/RansacCoreSegment
-      distance_threshold: 0.1
+      distance_threshold: 0.2
       max_iterations: 100
       min_inliers_count: 15
-      min_z_component: 0.9
+      min_z_component: 0.5
+      max_z: 0.2

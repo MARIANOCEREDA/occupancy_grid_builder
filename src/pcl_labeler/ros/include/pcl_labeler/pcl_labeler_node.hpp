@@ -34,7 +34,7 @@ class PCLLabelerNode : public rclcpp_lifecycle::LifecycleNode
   void segmentation_mask_callback(const sensor_msgs::msg::Image::SharedPtr msg);
   void camera_info_callback(const sensor_msgs::msg::CameraInfo::SharedPtr msg);
   void lidar_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
-  void label_point_cloud();
+  void label_point_cloud(const sensor_msgs::msg::PointCloud2::SharedPtr& input_cloud);
 
   rclcpp_lifecycle::LifecyclePublisher<sensor_msgs::msg::PointCloud2>::SharedPtr labeled_pcl_pub_;
 
@@ -52,12 +52,10 @@ class PCLLabelerNode : public rclcpp_lifecycle::LifecycleNode
 
   std::atomic<bool> camera_info_received_{false};
   std::atomic<bool> segmentation_mask_received_{false};
-  std::atomic<bool> lidar_data_received_{false};
 
   std::mutex data_mutex_;
 
-  sensor_msgs::msg::Image latest_segmentation_mask_;
-  sensor_msgs::msg::PointCloud2 latest_lidar_data_;
+  sensor_msgs::msg::Image::SharedPtr latest_segmentation_mask_;
   sensor_msgs::msg::PointCloud2 output_labeled_cloud_;
 
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcl_cloud_;

@@ -1,5 +1,7 @@
 #include <occupancy_grid_builder/occupancy_grid_builder.hpp>
 
+#include <cmath>
+
 namespace occupancy_grid_builder
 {
 OccupancyGridBuilder::~OccupancyGridBuilder() = default;
@@ -15,6 +17,12 @@ std::vector<std::vector<int>>& OccupancyGridBuilder::buildGridFromPCL(
   
   for (const auto& point : cloud->points)
   {
+    // NaN -> int is undefined and yields INT_MIN, making the Bresenham ray billions of cells long.
+    if (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z))
+    {
+      continue;
+    }
+
     Eigen::Vector4f point_sensor_frame(point.x, point.y, point.z, 1.0f);
     Eigen::Vector4f point_in_map_frame =
         pointToMap(point_sensor_frame, pcl_origin_to_map_transform);
