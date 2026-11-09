@@ -26,7 +26,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: PointCloud2
+    SyncSource: Ground Segmentation (non-ground)
 Visualization Manager:
   Class: ""
   Displays:
@@ -204,52 +204,11 @@ Visualization Manager:
       Max Intensity: 4096
       Min Color: 0; 0; 0
       Min Intensity: 0
-      Name: PointCloud2
-      Position Transformer: XYZ
-      Selectable: true
-      Size (Pixels): 3
-      Size (m): 0.03999999910593033
-      Style: Flat Squares
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /points_labeled
-      Use Fixed Frame: true
-      Use rainbow: true
-      Value: true
-    - Alpha: 1
-      Class: rviz_default_plugins/PointCloud2
-      Color: 255; 255; 255
-      Color Transformer: RGB8
-      Decay Time: 0
-      Enabled: true
-      Name: Ground Segmentation (all points)
-      Position Transformer: XYZ
-      Selectable: true
-      Size (Pixels): 3
-      Size (m): 0.03999999910593033
-      Style: Points
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        History Policy: Keep Last
-        Reliability Policy: Best Effort
-        Value: /segmented_points
-      Use Fixed Frame: true
-      Value: true
-    - Alpha: 1
-      Class: rviz_default_plugins/PointCloud2
-      Color: 255; 255; 255
-      Color Transformer: RGB8
-      Decay Time: 0
-      Enabled: true
       Name: Ground Segmentation (non-ground)
       Position Transformer: XYZ
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.039999999105965164
+      Size (m): 0.03999999910593033
       Style: Points
       Topic:
         Depth: 5
@@ -258,6 +217,7 @@ Visualization Manager:
         Reliability Policy: Best Effort
         Value: /segmented_points_non_ground
       Use Fixed Frame: true
+      Use rainbow: true
       Value: true
     - Class: rviz_default_plugins/Image
       Enabled: true
@@ -365,7 +325,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 34.60033416748047
+      Distance: 36.041412353515625
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -380,10 +340,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.0897966623306274
+      Pitch: 0.729796826839447
       Target Frame: odom_lidar
       Value: Orbit (rviz_default_plugins)
-      Yaw: 4.155399322509766
+      Yaw: 3.1653943061828613
     Saved: ~
 Window Geometry:
   Displays:
