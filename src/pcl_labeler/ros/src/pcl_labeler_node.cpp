@@ -30,6 +30,8 @@ CallbackReturn PCLLabelerNode::on_configure(const rclcpp_lifecycle::State&)
   this->declare_parameter<std::string>("labeled_point_cloud_topic", "points_labeled");
   this->declare_parameter<std::string>("segmentation_mask_topic", "/segmentation/mask");
   this->declare_parameter<std::string>("camera_info_topic", "camera_info");
+  this->declare_parameter<int>("sync_queue_size", 10);
+  this->declare_parameter<double>("sync_max_interval", 0.05);
 
   camera_frame_name_ = this->get_parameter("camera_frame_name").as_string();
   lidar_frame_name_ = this->get_parameter("lidar_frame_name").as_string();
@@ -55,15 +57,25 @@ CallbackReturn PCLLabelerNode::on_configure(const rclcpp_lifecycle::State&)
       10,
       std::bind(&PCLLabelerNode::camera_info_callback, this, std::placeholders::_1),
       camera_sub_options);
-  segmentation_mask_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
-      segmentation_mask_topic,
-      rclcpp::SensorDataQoS().keep_last(1),
-      std::bind(&PCLLabelerNode::segmentation_mask_callback, this, std::placeholders::_1),
-      camera_sub_options);
-  lidar_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-      point_cloud_topic,
-      rclcpp::SensorDataQoS().keep_last(1),
-      std::bind(&PCLLabelerNode::lidar_callback, this, std::placeholders::_1));
+
+  // The mask arrives after YOLO inference, so the queue must hold clouds until it does.
+  const auto sync_queue_size =
+      static_cast<size_t>(this->get_parameter("sync_queue_size").as_int());
+  const double sync_max_interval = this->get_parameter("sync_max_interval").as_double();
+  const rmw_qos_profile_t sync_qos =
+      rclcpp::SensorDataQoS().keep_last(sync_queue_size).get_rmw_qos_profile();
+
+  // Same callback group as camera_info so labeling is never run concurrently.
+  lidar_sub_ = std::make_shared<CloudSubscriber>(
+      this, point_cloud_topic, sync_qos, camera_sub_options);
+  segmentation_mask_sub_ = std::make_shared<MaskSubscriber>(
+      this, segmentation_mask_topic, sync_qos, camera_sub_options);
+
+  sync_ = std::make_shared<Synchronizer>(
+      SyncPolicy(sync_queue_size), *lidar_sub_, *segmentation_mask_sub_);
+  sync_->getPolicy()->setMaxIntervalDuration(rclcpp::Duration::from_seconds(sync_max_interval));
+  sync_->registerCallback(std::bind(
+      &PCLLabelerNode::label_point_cloud, this, std::placeholders::_1, std::placeholders::_2));
 
   RCLCPP_INFO(get_logger(), "Camera-LiDAR Fusion Node configured.");
   return CallbackReturn::SUCCESS;
@@ -90,6 +102,7 @@ CallbackReturn PCLLabelerNode::on_cleanup(const rclcpp_lifecycle::State&)
   RCLCPP_INFO(get_logger(), "Cleaning up Camera-LiDAR Fusion Node...");
   labeled_pcl_pub_.reset();
   camera_info_sub_.reset();
+  sync_.reset();
   segmentation_mask_sub_.reset();
   lidar_sub_.reset();
   RCLCPP_INFO(get_logger(), "Camera-LiDAR Fusion Node cleaned up.");
@@ -100,15 +113,6 @@ CallbackReturn PCLLabelerNode::on_shutdown(const rclcpp_lifecycle::State&)
 {
   RCLCPP_INFO(get_logger(), "Shutting down Camera-LiDAR Fusion Node...");
   return CallbackReturn::SUCCESS;
-}
-
-void PCLLabelerNode::segmentation_mask_callback(const sensor_msgs::msg::Image::SharedPtr msg)
-{
-  {
-    std::lock_guard<std::mutex> lock(data_mutex_);
-    latest_segmentation_mask_ = msg;
-    segmentation_mask_received_ = true;
-  }
 }
 
 void PCLLabelerNode::camera_info_callback(const sensor_msgs::msg::CameraInfo::SharedPtr msg)
@@ -126,27 +130,25 @@ void PCLLabelerNode::camera_info_callback(const sensor_msgs::msg::CameraInfo::Sh
   RCLCPP_INFO(get_logger(), "Received camera info.");
 }
 
-void PCLLabelerNode::lidar_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
-{
-  // Process the point cloud directly to avoid retaining and copying large messages.
-  label_point_cloud(msg);
-}
-
 void PCLLabelerNode::label_point_cloud(
-    const sensor_msgs::msg::PointCloud2::SharedPtr& input_cloud)
+    const sensor_msgs::msg::PointCloud2::ConstSharedPtr& input_cloud,
+    const sensor_msgs::msg::Image::ConstSharedPtr& segmentation_mask)
 {
-  sensor_msgs::msg::Image::SharedPtr segmentation_mask;
   cv::Mat camera_intrinsics;
   {
     std::lock_guard<std::mutex> lock(data_mutex_);
-    if (!camera_info_received_ || !segmentation_mask_received_ || !latest_segmentation_mask_)
+    if (!camera_info_received_)
     {
-      RCLCPP_DEBUG(get_logger(), "Not all data received yet. Skipping labeling.");
+      RCLCPP_DEBUG(get_logger(), "Camera info not received yet. Skipping labeling.");
       return;
     }
-    segmentation_mask = latest_segmentation_mask_;
     camera_intrinsics = camera_intrinsics_.clone();
   }
+
+  RCLCPP_DEBUG(get_logger(),
+               "Labeling cloud/mask pair with stamp offset %.3f s",
+               (rclcpp::Time(input_cloud->header.stamp) - rclcpp::Time(segmentation_mask->header.stamp))
+                   .seconds());
 
   try
   {

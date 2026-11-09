@@ -14,6 +14,7 @@ find_package(rclcpp_components REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
+find_package(message_filters REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
@@ -49,6 +50,7 @@ ament_target_dependencies(
   rclcpp_lifecycle
   OpenCV
   cv_bridge
+  message_filters
   sensor_msgs
   tf2
   tf2_ros
