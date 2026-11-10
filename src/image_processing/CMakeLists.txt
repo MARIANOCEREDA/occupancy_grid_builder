@@ -33,6 +33,7 @@ ament_target_dependencies(
   cv_bridge
   sensor_msgs
 )
+
 rclcpp_components_register_node(${COMPONENT_NAME} PLUGIN "image_undistort::ImageUndistort" EXECUTABLE ${NODE_NAME})
 
 target_include_directories(${COMPONENT_NAME} PUBLIC
