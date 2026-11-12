@@ -151,6 +151,8 @@ void ImageUndistort::camera_info_callback(
   }
 
   camera_info_received_ = true;
+  // Once the camera info is received, lets reset the subscription to avoid loading
+  // the CPU. The camera is static and intrinsics do not change.
   camera_info_sub_.reset();
 }
 
