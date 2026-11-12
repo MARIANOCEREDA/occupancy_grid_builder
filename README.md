@@ -113,5 +113,6 @@ Improve 3D segmentation and point-cloud processing:
 - [ ] Remove cluster outliers.
 
 Reduce end-to-end latency in the perception pipeline.
-- [x] Measure the latency of the full pipeline (Average: 427 ms). From ROS message timestamp to occupancy grid publication.
+- [x] Measure the latency of the full pipeline (Average: 427 ms, non gpu inference). From ROS message timestamp to occupancy grid publication.
 - [ ] Measure the latency of individual components in the pipeline.
+    - [x] Measure the inference time of yolo_onnx_ros (Average: 75 ms).

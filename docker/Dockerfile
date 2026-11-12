@@ -1,14 +1,35 @@
 # syntax = docker/dockerfile:1.2
 
-FROM ros:jazzy-ros-base-noble AS core_system
+FROM nvidia/cuda:12.6.3-cudnn-runtime-ubuntu24.04 AS core_system
 
 # Prevent interactive questions during image build
 ENV DEBIAN_FRONTEND=noninteractive
+ENV ROS_DISTRO=jazzy
+ENV LANG=en_US.UTF-8
 
 # Remove the docker-auto-clean feature of debian docker images
 RUN rm -f /etc/apt/apt.conf.d/docker-clean
 
-RUN userdel ubuntu
+RUN if id -u ubuntu >/dev/null 2>&1; then userdel -r ubuntu; fi
+
+# Add the ROS 2 Jazzy apt repository (the CUDA base image does not include ROS).
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt update \
+    && apt install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+        gnupg \
+        locales \
+        software-properties-common \
+    && locale-gen en_US en_US.UTF-8 \
+    && update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 \
+    && add-apt-repository universe \
+    && curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
+        -o /usr/share/keyrings/ros-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] \
+        http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" \
+        | tee /etc/apt/sources.list.d/ros2.list > /dev/null
 
 # Install essential packages and ROS development tools
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
@@ -70,7 +91,11 @@ FROM core_system AS builder
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt update \
-    && apt install --no-install-recommends -y ros-$ROS_DISTRO-ros-base \
+    && apt install --no-install-recommends -y \
+        python3-rosdep \
+        ros-$ROS_DISTRO-ros-base \
+        ros-$ROS_DISTRO-rviz2 \
+    && rosdep init \
     && rm -rf /var/lib/apt/lists/*
 
 ARG UID=1000

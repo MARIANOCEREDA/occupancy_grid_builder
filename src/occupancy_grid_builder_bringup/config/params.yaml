@@ -23,15 +23,16 @@ ground_segmentation_node:
 image_undistort_node:
   ros__parameters:
     resize_output: false
-    display_latency: true
+    display_latency: false
 
 # YOLO ONNX segmentor
 yolo_onnx_segmentor_node:
   ros__parameters:
-    device_type: CPU
+    device_type: GPU
     input_image_topic: /image_rect
     output_mask_topic: /segmentation/mask
     output_detections_topic: /segmentation/detections
+    display_latency: true
 
 # PCL labeler
 pcl_labeler_node:
