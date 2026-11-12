@@ -235,7 +235,7 @@ void OccupancyGridBuilderNode::gridBuilderThread(std::stop_token stop_token)
     {
       const double cloud_latency =
           (this->now() - rclcpp::Time(msg->header.stamp, RCL_ROS_TIME)).seconds();
-      RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 2000, "Pipeline latency: %.3f s", cloud_latency);
+      RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "Pipeline latency: %.3f s", cloud_latency);
     }
   }
 }
