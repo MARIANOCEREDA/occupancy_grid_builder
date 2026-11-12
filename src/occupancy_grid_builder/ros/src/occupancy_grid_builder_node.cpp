@@ -212,7 +212,17 @@ void OccupancyGridBuilderNode::gridBuilderThread(std::stop_token stop_token)
     transform_matrix_ = transform_eigen.matrix().cast<float>();
 
     pcl_cloud_->clear();
-    pcl::fromROSMsg(*msg, *pcl_cloud_);
+    if (msg->width == 0 || msg->height == 0 || msg->data.empty())
+    {
+      RCLCPP_WARN_THROTTLE(this->get_logger(),
+                           *this->get_clock(),
+                           1000,
+                           "Received an empty point cloud; publishing an unknown grid for this scan");
+    }
+    else
+    {
+      pcl::fromROSMsg(*msg, *pcl_cloud_);
+    }
 
     const auto& grid = grid_builder_->buildGridFromPCL(pcl_cloud_, transform_matrix_);
 
@@ -231,17 +241,6 @@ void OccupancyGridBuilderNode::gridBuilderThread(std::stop_token stop_token)
 }
 
 }  // namespace occupancy_grid_builder
-
-int main(int argc, char* argv[])
-{
-  rclcpp::init(argc, argv);
-  rclcpp::executors::SingleThreadedExecutor executor;
-  auto node = std::make_shared<occupancy_grid_builder::OccupancyGridBuilderNode>();
-  executor.add_node(node->get_node_base_interface());
-  executor.spin();
-  rclcpp::shutdown();
-  return 0;
-}
 
 // Register the component with class_loader for composable nodes
 #include <rclcpp_components/register_node_macro.hpp>

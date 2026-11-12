@@ -1,5 +1,6 @@
 #include <occupancy_grid_builder/occupancy_grid_builder.hpp>
 
+#include <algorithm>
 #include <cmath>
 
 namespace occupancy_grid_builder
@@ -10,6 +11,12 @@ std::vector<std::vector<int>>& OccupancyGridBuilder::buildGridFromPCL(
     const pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud,
     const Eigen::Matrix4f& pcl_origin_to_map_transform)
 {
+  // Build a per-cloud snapshot so cells from earlier scans cannot persist.
+  for (auto& row : occupancy_grid_)
+  {
+    std::fill(row.begin(), row.end(), -1);
+  }
+
   // Compute sensor origin in map frame (sensor origin is at 0,0,0 in sensor frame)
   Eigen::Vector4f sensor_origin_sensor_frame(0.0f, 0.0f, 0.0f, 1.0f);
   Eigen::Vector4f sensor_origin_in_map_frame = 

@@ -2,6 +2,7 @@
 
 #include <cv_bridge/cv_bridge.hpp>
 #include <pcl_conversions/pcl_conversions.h>
+#include <sensor_msgs/image_encodings.hpp>
 #include <tf2_eigen/tf2_eigen.hpp>
 
 #include "pcl_labeler/pcl_labeler.hpp"
@@ -43,9 +44,8 @@ CallbackReturn PCLLabelerNode::on_configure(const rclcpp_lifecycle::State&)
       this->get_parameter("labeled_point_cloud_topic").as_string();
 
   // Create publishers
-  labeled_pcl_pub_ =
-      this->create_publisher<sensor_msgs::msg::PointCloud2>(
-        labeled_point_cloud_topic, rclcpp::QoS(rclcpp::KeepLast(1)));
+  labeled_pcl_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+      labeled_point_cloud_topic, rclcpp::QoS(rclcpp::KeepLast(1)));
 
   rclcpp::SubscriptionOptions camera_sub_options;
   camera_sub_options.callback_group =
@@ -59,17 +59,16 @@ CallbackReturn PCLLabelerNode::on_configure(const rclcpp_lifecycle::State&)
       camera_sub_options);
 
   // The mask arrives after YOLO inference, so the queue must hold clouds until it does.
-  const auto sync_queue_size =
-      static_cast<size_t>(this->get_parameter("sync_queue_size").as_int());
+  const auto sync_queue_size = static_cast<size_t>(this->get_parameter("sync_queue_size").as_int());
   const double sync_max_interval = this->get_parameter("sync_max_interval").as_double();
   const rmw_qos_profile_t sync_qos =
       rclcpp::SensorDataQoS().keep_last(sync_queue_size).get_rmw_qos_profile();
 
   // Same callback group as camera_info so labeling is never run concurrently.
-  lidar_sub_ = std::make_shared<CloudSubscriber>(
-      this, point_cloud_topic, sync_qos, camera_sub_options);
-  segmentation_mask_sub_ = std::make_shared<MaskSubscriber>(
-      this, segmentation_mask_topic, sync_qos, camera_sub_options);
+  lidar_sub_ =
+      std::make_shared<CloudSubscriber>(this, point_cloud_topic, sync_qos, camera_sub_options);
+  segmentation_mask_sub_ =
+      std::make_shared<MaskSubscriber>(this, segmentation_mask_topic, sync_qos, camera_sub_options);
 
   sync_ = std::make_shared<Synchronizer>(
       SyncPolicy(sync_queue_size), *lidar_sub_, *segmentation_mask_sub_);
@@ -145,10 +144,11 @@ void PCLLabelerNode::label_point_cloud(
     camera_intrinsics = camera_intrinsics_.clone();
   }
 
-  RCLCPP_DEBUG(get_logger(),
-               "Labeling cloud/mask pair with stamp offset %.3f s",
-               (rclcpp::Time(input_cloud->header.stamp) - rclcpp::Time(segmentation_mask->header.stamp))
-                   .seconds());
+  RCLCPP_DEBUG(
+      get_logger(),
+      "Labeling cloud/mask pair with stamp offset %.3f s",
+      (rclcpp::Time(input_cloud->header.stamp) - rclcpp::Time(segmentation_mask->header.stamp))
+          .seconds());
 
   try
   {
@@ -161,27 +161,50 @@ void PCLLabelerNode::label_point_cloud(
     Eigen::Matrix4f extrinsics = transform_eigen.matrix().cast<float>();
 
     // 2. Convert segmentation mask to OpenCV
-    cv_bridge::CvImagePtr cv_mask = cv_bridge::toCvCopy(*segmentation_mask);
-    cv::Mat mask_single_channel = cv_mask->image;
+    
+    const size_t required_size = static_cast<size_t>(segmentation_mask->width) *
+                                 static_cast<size_t>(segmentation_mask->height);
 
-    // Convert single-channel mask to 3-channel BGR image
-    // Labels are encoded in the blue channel (or all channels for grayscale)
-    cv::Mat mask_bgr;
-    if (mask_single_channel.channels() == 1)
+    bool valid_img_msg = true;
+    std::string reason = "";
+
+    if (segmentation_mask->step < segmentation_mask->width)
     {
-      cv::cvtColor(mask_single_channel, mask_bgr, cv::COLOR_GRAY2BGR);
+      valid_img_msg = false;
+      reason = "Invalid segmentation mask step.";
     }
-    else
+
+    if (segmentation_mask->data.size() < required_size)
     {
-      mask_bgr = mask_single_channel;
+      valid_img_msg = false;
+      reason = "Segmentation mask data size is smaller than expected.";
     }
+
+    if (segmentation_mask->encoding != sensor_msgs::image_encodings::MONO8)
+    {
+      valid_img_msg = false;
+      reason = "Unsupported segmentation mask encoding. Expected MONO8.";
+    }
+
+    if (!valid_img_msg)
+    {
+      RCLCPP_WARN_THROTTLE(
+          get_logger(), *get_clock(), 1.0, "Invalid segmentation mask message: %s", reason.c_str());
+      return;
+    }
+
+    cv::Mat mask_single_channel(cv::Size(segmentation_mask->width, segmentation_mask->height),
+                                CV_8UC1,
+                                const_cast<uint8_t*>(segmentation_mask->data.data()),
+                                static_cast<size_t>(segmentation_mask->step));
+    
 
     // 3. Convert ROS PointCloud2 to PCL
     pcl_cloud_->clear();
     pcl::fromROSMsg(*input_cloud, *pcl_cloud_);
 
     // 4. Setup the pcl labeler and call fuse()
-    pcl_labeler::PCLLabeler fusion;
+    pcl_labeler::PCLLabeler pcl_labeler;
 
     // Convert camera intrinsics to Eigen
     Eigen::Matrix3f intrinsics_eigen;
@@ -193,18 +216,12 @@ void PCLLabelerNode::label_point_cloud(
       }
     }
 
-    fusion.set_extrinsics(extrinsics);
-    fusion.set_intrinsics(intrinsics_eigen);
-
-    // Prepare image structure
-    pcl_labeler::Image mask_image;
-    mask_image.width = mask_bgr.cols;
-    mask_image.height = mask_bgr.rows;
-    mask_image.data.assign(mask_bgr.data, mask_bgr.data + mask_bgr.total() * mask_bgr.channels());
+    pcl_labeler.set_extrinsics(extrinsics);
+    pcl_labeler.set_intrinsics(intrinsics_eigen);
 
     // Fuse mask with point cloud
     labeled_cloud_->clear();
-    labeled_cloud_ = fusion.fuse(mask_image, pcl_cloud_);
+    labeled_cloud_ = pcl_labeler.fuse(mask_single_channel, pcl_cloud_);
 
     // 5. Convert back to ROS PointCloud2
     sensor_msgs::msg::PointCloud2 output_msg;
