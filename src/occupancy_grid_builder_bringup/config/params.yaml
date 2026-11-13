@@ -32,7 +32,7 @@ yolo_onnx_segmentor_node:
     input_image_topic: /image_rect
     output_mask_topic: /segmentation/mask
     output_detections_topic: /segmentation/detections
-    display_latency: false
+    display_latency: true
 
 # PCL labeler
 pcl_labeler_node:
@@ -52,7 +52,7 @@ occupancy_grid_builder_node:
     # Topic names
     pointcloud_topic: "/points_labeled"
     grid_topic: "/map"
-    display_latency: true
+    display_latency: false
 
     # Frame names
     map_frame: "map"

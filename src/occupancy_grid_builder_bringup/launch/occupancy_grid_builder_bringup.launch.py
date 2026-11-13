@@ -79,6 +79,7 @@ def generate_launch_description():
         package='kiss_icp',
         plugin='kiss_icp_ros::OdometryServer',
         name='kiss_icp_node',
+        extra_arguments=[{'use_intra_process_comms': True}],
         remappings=[
             ('pointcloud_topic', LaunchConfiguration('topic')),
         ],
@@ -108,6 +109,7 @@ def generate_launch_description():
         package='ground_segmentation',
         plugin='ground_segmentation::GroundSegmentationNode',
         name='ground_segmentation_node',
+        extra_arguments=[{'use_intra_process_comms': True}],
         parameters=[params_file],
     )
 
@@ -116,6 +118,7 @@ def generate_launch_description():
         package='image_processing',
         plugin='image_undistort::ImageUndistort',
         name='image_undistort_node',
+        extra_arguments=[{'use_intra_process_comms': True}],
         parameters=[params_file, {
             'use_sim_time': LaunchConfiguration('use_sim_time'),
         }],
@@ -126,6 +129,7 @@ def generate_launch_description():
         package='yolo_onnx_ros',
         plugin='yolo_onnx_ros::YoloSegmentorNode',
         name='yolo_onnx_segmentor_node',
+        extra_arguments=[{'use_intra_process_comms': True}],
         parameters=[params_file, {
             'use_sim_time': LaunchConfiguration('use_sim_time'),
             'model_path': os.path.join(
@@ -141,6 +145,7 @@ def generate_launch_description():
         package='pcl_labeler',
         plugin='pcl_labeler::PCLLabelerNode',
         name='pcl_labeler_node',
+        extra_arguments=[{'use_intra_process_comms': True}],
         parameters=[params_file, {
             'use_sim_time': LaunchConfiguration('use_sim_time'),
         }],
@@ -151,6 +156,7 @@ def generate_launch_description():
         package='occupancy_grid_builder',
         plugin='occupancy_grid_builder::OccupancyGridBuilderNode',
         name='occupancy_grid_builder_node',
+        extra_arguments=[{'use_intra_process_comms': True}],
         parameters=[
             params_file,
             {'use_sim_time': LaunchConfiguration('use_sim_time')}
