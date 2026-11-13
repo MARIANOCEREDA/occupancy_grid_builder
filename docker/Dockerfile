@@ -1,4 +1,4 @@
-# syntax = docker/dockerfile:1.2
+# syntax = docker/dockerfile:1
 
 FROM nvidia/cuda:12.6.3-cudnn-runtime-ubuntu24.04 AS core_system
 
@@ -134,6 +134,8 @@ ENV WS_DIR=$HOME/ws
 
 RUN mkdir -p $HOME/.cache
 RUN mkdir -p $HOME/.config
+# Pre-create so the Claude Code config volume mounted here is owned by $USER, not root.
+RUN mkdir -p $HOME/.claude
 
 WORKDIR $WS_DIR
 
