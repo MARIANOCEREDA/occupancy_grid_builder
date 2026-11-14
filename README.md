@@ -115,4 +115,9 @@ Improve 3D segmentation and point-cloud processing:
 Reduce end-to-end latency in the perception pipeline.
 - [x] Measure the latency of the full pipeline (Average: 170 ms, with gpu inference). From ROS message timestamp to occupancy grid publication.
 - [ ] Measure the latency of individual components in the pipeline.
-    - [x] Measure the inference time of yolo_onnx_ros (Average: 75 ms).
+    - [x] Measure the latency of image undistortion (Average: 15ms).
+    - [x] Measure the latency of yolo_onnx_ros (Average: 12-19 ms).
+  
+- [ ] Reduce the latency of individual components in the pipeline.
+    - [x] Reduce the latency of image undistortion (Reduced to 1.5 ms).
+    - [x] Reduce the inference time of yolo_onnx_ros (Reduced to 10-15 ms).
