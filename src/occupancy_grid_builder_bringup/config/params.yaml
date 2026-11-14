@@ -32,7 +32,7 @@ yolo_onnx_segmentor_node:
     input_image_topic: /image_rect
     output_mask_topic: /segmentation/mask
     output_detections_topic: /segmentation/detections
-    display_latency: true
+    display_latency: false
 
 # PCL labeler
 pcl_labeler_node:

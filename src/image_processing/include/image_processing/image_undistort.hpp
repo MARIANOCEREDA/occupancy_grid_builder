@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <memory>
 #include "rclcpp/rclcpp.hpp"
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
@@ -47,6 +48,8 @@ namespace image_undistort
         cv::Mat input_distorded_image_;
         bool display_latency_ = false;
         cv::Mat undistorted_image_;
+        cv::Mat map1_;
+        cv::Mat map2_;
 
         DistortionModels distortion_model_ = DistortionModels::FISHEYE;
 
@@ -55,6 +58,10 @@ namespace image_undistort
         std::string image_topic_;
         std::string camera_info_topic_;
         std::string output_image_topic_;
-        bool resize_output_ = false;
+
+        // Sum of image_callback processing times [ms] (steady clock), logged as an average every 10 frames.
+        // Only touched by image_callback (mutually exclusive callback group), so no synchronization needed.
+        double total_ms_sum_ = 0.0;
+        size_t timing_frames_ = 0;
     };
 } // namespace image_undistort

@@ -9,7 +9,7 @@ fisheye model) using the intrinsics from the first `CameraInfo` message, then re
 | `camera_info_topic` | `camera_info` | Camera intrinsics, read once. |
 | `output_image_topic` | `image_rect` | Undistorted output image. |
 | `resize_output` | `false` | Halve the output resolution. |
-| `display_latency` | `false` | Log header stamp → publish latency (throttled). |
+| `display_latency` | `false` | Log per-stage processing time (steady clock, ~1 s averages). |
 
 ## Latency
 
@@ -21,5 +21,5 @@ composable container with intra-process comms.
 | Undistortion processing (`image_callback`) | ~10 ms |
 
 Only the processing time inside the node is listed. The `display_latency` log measures from the
-image header stamp, so it also includes upstream latency (driver / bag recording offset and
-transport). It does not reflect this node's cost.
+start of `image_callback`, so it excludes upstream latency (driver / bag recording offset and
+transport).

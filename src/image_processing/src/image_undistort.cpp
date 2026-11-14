@@ -14,13 +14,11 @@ CallbackReturn ImageUndistort::on_configure(const rclcpp_lifecycle::State&)
   this->declare_parameter("input_image_topic", "image");
   this->declare_parameter("camera_info_topic", "camera_info");
   this->declare_parameter("output_image_topic", "image_rect");
-  this->declare_parameter("resize_output", false);
   this->declare_parameter("display_latency", false);
 
   image_topic_ = this->get_parameter("input_image_topic").as_string();
   camera_info_topic_ = this->get_parameter("camera_info_topic").as_string();
   output_image_topic_ = this->get_parameter("output_image_topic").as_string();
-  resize_output_ = this->get_parameter("resize_output").as_bool();
   display_latency_ = this->get_parameter("display_latency").as_bool();
 
   RCLCPP_INFO(get_logger(), "Configured %s node", kNodeName);
@@ -80,32 +78,30 @@ void ImageUndistort::image_callback(const sensor_msgs::msg::Image::SharedPtr ima
     return;
   }
 
-  auto image_ts = rclcpp::Time(image_msg->header.stamp);
-
+  const auto t_start = std::chrono::steady_clock::now();
   cv_bridge::CvImageConstPtr cv_ptr = cv_bridge::toCvShare(image_msg, image_msg->encoding);
-  if (distortion_model_ == DistortionModels::FISHEYE)
+
+  if (distortion_model_ != DistortionModels::FISHEYE)
   {
-    cv::fisheye::undistortImage(cv_ptr->image,
-                                undistorted_image_,
-                                camera_matrix_,
-                                dist_coeffs_,
-                                camera_matrix_,
-                                cv_ptr->image.size());
-  }
-  else if (distortion_model_ == DistortionModels::PINHOLE)
-  {
-    cv::undistort(cv_ptr->image, undistorted_image_, camera_matrix_, dist_coeffs_);
-  }
-  else
-  {
-    RCLCPP_ERROR(get_logger(), "Unsupported distortion model.");
+    RCLCPP_ERROR(get_logger(), "Only fisheye distortion model is supported.");
     return;
   }
 
-  if (resize_output_)
+  // 1. Build the map once, since intrinsics are static.
+  if (map1_.empty() || map2_.empty())
   {
-    cv::resize(undistorted_image_, undistorted_image_, cv::Size(), 0.5, 0.5);
+    cv::fisheye::initUndistortRectifyMap(camera_matrix_,      // K  
+                                         dist_coeffs_,        // D
+                                         cv::Matx33d::eye(),  // I
+                                         camera_matrix_,      // P
+                                         cv_ptr->image.size(),
+                                         CV_32FC1,
+                                         map1_,
+                                         map2_);
   }
+
+  // 2. Undistort using the calculated map.
+  cv::remap(cv_ptr->image, undistorted_image_, map1_, map2_, cv::INTER_LINEAR);
 
   auto undistorted_image_msg = std::make_unique<sensor_msgs::msg::Image>();
 
@@ -118,15 +114,24 @@ void ImageUndistort::image_callback(const sensor_msgs::msg::Image::SharedPtr ima
 
   undistorted_image_msg->data.resize(undistorted_image_.total() * undistorted_image_.elemSize());
   undistorted_image_msg->data.assign(undistorted_image_.datastart, undistorted_image_.dataend);
-      
-  undistorted_image_pub_->publish(std::move(undistorted_image_msg));
 
-  auto end_ts = rclcpp::Time(this->now());
-  auto latency = (end_ts - image_ts).nanoseconds() / 1000000;
+  undistorted_image_pub_->publish(std::move(undistorted_image_msg));
+  const auto t_published = std::chrono::steady_clock::now();
 
   if (display_latency_)
   {
-    RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 2000, "Image undistortion latency: %ld ms", latency);
+    // Processing time of image_callback only (steady clock): excludes upstream/transport latency.
+    total_ms_sum_ += std::chrono::duration<double, std::milli>(t_published - t_start).count();
+    ++timing_frames_;
+    if (timing_frames_ % 10 == 0)
+    {
+      RCLCPP_INFO(get_logger(),
+                  "Average processing time over %zu frames: total=%.2f ms",
+                  timing_frames_,
+                  total_ms_sum_ / static_cast<double>(timing_frames_));
+      total_ms_sum_ = 0.0;
+      timing_frames_ = 0;
+    }
   }
 }
 
@@ -151,8 +156,6 @@ void ImageUndistort::camera_info_callback(
   }
 
   camera_info_received_ = true;
-  // Once the camera info is received, lets reset the subscription to avoid loading
-  // the CPU. The camera is static and intrinsics do not change.
   camera_info_sub_.reset();
 }
 
