@@ -8,3 +8,6 @@
 	path = src/kiss_icp
 	url = https://github.com/PRBonn/kiss-icp.git
 
+[submodule "src/image_processing"]
+	path = src/image_processing
+	url = https://github.com/MARIANOCEREDA/image_processing.git
